@@ -12,24 +12,33 @@ const path = require("path");
 const chalk = require("chalk");
 const url = require("url");
 const fs = require("fs");
-const minimist = require("minimist");
 const tinylr = require("tiny-lr");
 const ecstatic = require("ecstatic");
 const chokidar_1 = require("chokidar");
 const http_1 = require("http");
 const utils_1 = require("./utils");
 const watchPatterns = '**/*';
-const defaultOptions = {
-    root: __dirname,
-    address: '0.0.0.0',
-    httpPort: 3333,
-    liveReloadPort: 35729
+const optionInfo = {
+    root: {
+        default: __dirname,
+        type: String
+    },
+    address: {
+        default: '0.0.0.0',
+        type: String
+    },
+    httpPort: {
+        default: 3333,
+        type: Number
+    },
+    liveReloadPort: {
+        default: 35729,
+        type: Number
+    }
 };
 function run(argv) {
     return __awaiter(this, void 0, void 0, function* () {
-        const options = minimist(argv.slice(2), {
-            default: defaultOptions
-        });
+        const options = utils_1.parseOptions(optionInfo, argv);
         const [foundHttpPort, foundLiveReloadPort] = yield Promise.all([
             utils_1.findClosestOpenPort(options.address, options.httpPort),
             utils_1.findClosestOpenPort(options.address, options.liveReloadPort),
@@ -55,11 +64,9 @@ function createHttpServer(port, address, wwwDir, lrScriptLocation) {
             })(req, res);
         }
         function serveHtml(req, res) {
-            // respond with the index.html file
             const urlSegments = url.parse(req.url || '');
             const filePath = (urlSegments.pathname !== '/') ? urlSegments.pathname : '/index.html';
             const indexFileName = path.join(wwwDir, filePath || '');
-            console.log(indexFileName);
             fs.readFile(indexFileName, (err, indexHtml) => {
                 const htmlString = indexHtml.toString().replace('</body>', `<script type="text/javascript" src="//${lrScriptLocation}" charset="utf-8"></script>
         </body>`);

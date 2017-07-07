@@ -7,21 +7,31 @@ import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import { watch } from 'chokidar';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { findClosestOpenPort } from './utils';
+import { findClosestOpenPort, parseOptions } from './utils';
 import { InputOptions } from './definitions';
 
 const watchPatterns = '**/*';
-const defaultOptions: InputOptions = {
-  root: __dirname,
-  address: '0.0.0.0',
-  httpPort: 3333,
-  liveReloadPort: 35729
+const optionInfo = {
+  root: {
+    default: __dirname,
+    type: String
+  },
+  address: {
+    default: '0.0.0.0',
+    type: String
+  },
+  httpPort: {
+    default: 3333,
+    type: Number
+  },
+  liveReloadPort: {
+    default: 35729,
+    type: Number
+  }
 }
 
 export async function run(argv: string[]) {
-  const options = minimist(argv.slice(2), {
-    default: defaultOptions
-  });
+  const options = parseOptions(optionInfo, argv);
 
   const [ foundHttpPort, foundLiveReloadPort ] = await Promise.all([
     findClosestOpenPort(options.address, options.httpPort),
@@ -37,7 +47,6 @@ export async function run(argv: string[]) {
   console.log(`listening on ${options.address}:${foundHttpPort}`);
   console.log(`watching ${wwwRoot}`);
 }
-
 
 async function createHttpServer(port: number, address: string, wwwDir: string, lrScriptLocation: string) {
   function handler(req: IncomingMessage, res: ServerResponse) {
