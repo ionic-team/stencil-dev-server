@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "allowUnreachableCode": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "es2015",
+    "lib":[
+      "es2016"
+    ],
+    "outDir": "dist",
+    "sourceMap": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "types"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
