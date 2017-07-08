@@ -21,11 +21,16 @@ export function serveHtml(wwwDir: string, lrScriptLocation: string) {
 export function serveDirContents(wwwDir: string) {
   return async function(dirPath: string, req: IncomingMessage, res: ServerResponse) {
     let files: string[];
+    const dirUrl = req.url;
+    if (!dirUrl) {
+      return sendError(500, res, { err: 'Somthing is not right' });
+    }
     try {
       files = await fsReadDirPr(dirPath);
     } catch(err) {
       return sendError(500, res, { err: err});
     }
+
     const templateSrc = await fsReadFilePr(path.join(__dirname, '..', 'assets', 'index.html'));
     if (!templateSrc) {
       throw new Error('wait, where is my template src.');
@@ -34,16 +39,16 @@ export function serveDirContents(wwwDir: string) {
       .filter((fileName) => '.' !== fileName[0]) // remove hidden files
       .sort();
 
-    if (req.url !== '/') {
+    if (dirUrl !== '/') {
       files.unshift('..');
     }
 
-    const fileHtml = files.map((fileName) => (`<a href="${url.resolve(req.url || '/', fileName)}">${fileName}</a>`))
+    const fileHtml = files.map((fileName) => (`<a href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`))
       .join('<br/>\n');
 
     const templateHtml = templateSrc.toString()
       .replace('{files}', fileHtml)
-      .replace('linked-path', wwwDir);
+      .replace('{linked-path}', dirUrl.replace(/\//g,' / '));
 
 
     res.setHeader('Content-Type', 'text/html');

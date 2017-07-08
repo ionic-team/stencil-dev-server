@@ -28,6 +28,10 @@ function serveDirContents(wwwDir) {
     return function (dirPath, req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             let files;
+            const dirUrl = req.url;
+            if (!dirUrl) {
+                return sendError(500, res, { err: 'Somthing is not right' });
+            }
             try {
                 files = yield utils_1.fsReadDirPr(dirPath);
             }
@@ -41,14 +45,14 @@ function serveDirContents(wwwDir) {
             files = files
                 .filter((fileName) => '.' !== fileName[0]) // remove hidden files
                 .sort();
-            if (req.url !== '/') {
+            if (dirUrl !== '/') {
                 files.unshift('..');
             }
-            const fileHtml = files.map((fileName) => (`<a href="${url.resolve(req.url || '/', fileName)}">${fileName}</a>`))
+            const fileHtml = files.map((fileName) => (`<a href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`))
                 .join('<br/>\n');
             const templateHtml = templateSrc.toString()
                 .replace('{files}', fileHtml)
-                .replace('linked-path', wwwDir);
+                .replace('{linked-path}', dirUrl.replace(/\//g, ' / '));
             res.setHeader('Content-Type', 'text/html');
             res.end(templateHtml);
         });
