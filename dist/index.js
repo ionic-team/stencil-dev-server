@@ -10,17 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const chalk = require("chalk");
-const url = require("url");
-const fs = require("fs");
 const tinylr = require("tiny-lr");
 const ecstatic = require("ecstatic");
 const chokidar_1 = require("chokidar");
 const http_1 = require("http");
 const utils_1 = require("./utils");
-const watchPatterns = '**/*';
+const middlewares_1 = require("./middlewares");
 const optionInfo = {
     root: {
-        default: __dirname,
+        default: process.cwd(),
         type: String
     },
     address: {
@@ -46,36 +44,52 @@ function run(argv) {
         const wwwRoot = path.resolve(options.root);
         const [lrScriptLocation, emitLiveReloadUpdate] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
         createFileWatcher(wwwRoot, emitLiveReloadUpdate);
-        createHttpServer(foundHttpPort, options.address, wwwRoot, lrScriptLocation);
+        const requestHandler = createHttpRequestHandler(wwwRoot, lrScriptLocation);
+        http_1.createServer(requestHandler).listen(foundHttpPort);
         console.log(`listening on ${options.address}:${foundHttpPort}`);
         console.log(`watching ${wwwRoot}`);
     });
 }
 exports.run = run;
-function createHttpServer(port, address, wwwDir, lrScriptLocation) {
-    return __awaiter(this, void 0, void 0, function* () {
-        function handler(req, res) {
-            const urlSegments = url.parse(req.url || '/');
-            if (req.url === '/' || (urlSegments.pathname && urlSegments.pathname.endsWith('.html'))) {
-                return serveHtml(req, res);
+function createHttpRequestHandler(wwwDir, lrScriptLocation) {
+    const staticFileMiddleware = ecstatic({ root: wwwDir });
+    const sendHtml = middlewares_1.serveHtml(wwwDir, lrScriptLocation);
+    const sendDirectoryContents = middlewares_1.serveDirContents(wwwDir);
+    return function (req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const reqPath = utils_1.getRequestedPath(req.url || '');
+            const filePath = utils_1.getFileFromPath(wwwDir, req.url || '');
+            let pathStat;
+            try {
+                pathStat = yield utils_1.fsStatPr(filePath);
             }
-            return ecstatic({
-                root: wwwDir
-            })(req, res);
-        }
-        function serveHtml(req, res) {
-            const urlSegments = url.parse(req.url || '');
-            const filePath = (urlSegments.pathname !== '/') ? urlSegments.pathname : '/index.html';
-            const indexFileName = path.join(wwwDir, filePath || '');
-            fs.readFile(indexFileName, (err, indexHtml) => {
-                const htmlString = indexHtml.toString().replace('</body>', `<script type="text/javascript" src="//${lrScriptLocation}" charset="utf-8"></script>
-        </body>`);
-                res.setHeader('Content-Type', 'text/html');
-                res.end(htmlString);
-            });
-        }
-        http_1.createServer(handler).listen(port);
-    });
+            catch (err) {
+                if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+                    return middlewares_1.sendError(404, res, { error: err });
+                }
+                if (err.code === 'EACCES') {
+                    return middlewares_1.sendError(403, res, { error: err });
+                }
+                return middlewares_1.sendError(500, res, { error: err });
+            }
+            // serveIndexMiddleware(req, res);
+            if (pathStat.isDirectory() && !reqPath.endsWith('/')) {
+                res.statusCode = 302;
+                res.setHeader('location', reqPath + '/');
+                return res.end();
+            }
+            if (pathStat.isDirectory()) {
+                return yield sendDirectoryContents(filePath, req, res);
+            }
+            if (pathStat.isFile() && filePath.endsWith('.html')) {
+                return yield sendHtml(filePath, req, res);
+            }
+            if (pathStat.isFile()) {
+                return staticFileMiddleware(req, res);
+            }
+            return middlewares_1.sendError(415, res, { error: 'Resource requested cannot be served.' });
+        });
+    };
 }
 function createFileWatcher(wwwDir, changeCb) {
     const watcher = chokidar_1.watch(`${wwwDir}`, {

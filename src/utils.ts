@@ -1,3 +1,12 @@
+import * as path from 'path';
+import * as url from 'url';
+import * as fs from 'fs';
+import { promisify } from './promisify';
+
+export const fsStatPr = promisify(fs.stat);
+export const fsReadFilePr = promisify(fs.readFile);
+export const fsReadDirPr = promisify<string[], string>(fs.readdir);
+
 export async function findClosestOpenPort(host: string, port: number): Promise<number> {
   async function t(portToCheck: number): Promise<number> {
     const isTaken = await isPortTaken(host, portToCheck);
@@ -53,4 +62,38 @@ export function parseOptions(optionInfo: { [key: string]: any }, argv: string[])
     }
     return options;
   }, <{[key: string]: any}>{});
+}
+
+export function getRequestedPath(requestUrl: string) {
+  const parsed = url.parse(requestUrl);
+
+  decodeURIComponent(requestUrl);
+  return decodePathname(parsed.pathname || '');
+}
+
+export function getFileFromPath(wwwRoot: string, requestUrl: string) {
+  const pathname = getRequestedPath(requestUrl);
+
+  return path.normalize(
+    path.join(wwwRoot,
+      path.relative(
+        '/',
+        pathname
+      )
+    )
+  );
+}
+
+function decodePathname(pathname: string) {
+  const pieces = pathname.replace(/\\/g,"/").split('/');
+
+  return pieces.map((piece) => {
+    piece = decodeURIComponent(piece);
+
+    if (process.platform === 'win32' && /\\/.test(piece)) {
+      throw new Error('Invalid forward slash character');
+    }
+
+    return piece;
+  }).join('/');
 }

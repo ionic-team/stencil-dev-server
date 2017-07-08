@@ -1,19 +1,16 @@
 import * as path from 'path';
 import * as chalk from 'chalk';
-import * as url from 'url';
 import * as fs from 'fs';
-import * as minimist from 'minimist';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import { watch } from 'chokidar';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { findClosestOpenPort, parseOptions } from './utils';
-import { InputOptions } from './definitions';
+import { findClosestOpenPort, parseOptions, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
+import { serveHtml, serveDirContents, sendError } from './middlewares';
 
-const watchPatterns = '**/*';
 const optionInfo = {
   root: {
-    default: __dirname,
+    default: process.cwd(),
     type: String
   },
   address: {
@@ -42,40 +39,53 @@ export async function run(argv: string[]) {
   const [ lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
 
   createFileWatcher(wwwRoot, emitLiveReloadUpdate);
-  createHttpServer(foundHttpPort, options.address, wwwRoot, lrScriptLocation);
+  const requestHandler = createHttpRequestHandler(wwwRoot, lrScriptLocation);
+
+  createServer(requestHandler).listen(foundHttpPort);
 
   console.log(`listening on ${options.address}:${foundHttpPort}`);
   console.log(`watching ${wwwRoot}`);
 }
 
-async function createHttpServer(port: number, address: string, wwwDir: string, lrScriptLocation: string) {
-  function handler(req: IncomingMessage, res: ServerResponse) {
-    const urlSegments = url.parse(req.url || '/');
-    if (req.url === '/' || (urlSegments.pathname && urlSegments.pathname.endsWith('.html'))) {
-      return serveHtml(req, res);
+function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
+  const staticFileMiddleware = ecstatic({ root: wwwDir });
+  const sendHtml = serveHtml(wwwDir, lrScriptLocation);
+  const sendDirectoryContents = serveDirContents(wwwDir);
+
+  return async function(req: IncomingMessage, res: ServerResponse) {
+    const reqPath = getRequestedPath(req.url || '');
+    const filePath = getFileFromPath(wwwDir, req.url || '');
+    let pathStat: fs.Stats;
+
+    try {
+      pathStat = await fsStatPr(filePath);
+    } catch (err) {
+      if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+        return sendError(404, res, { error: err });
+      }
+      if (err.code === 'EACCES') {
+        return sendError(403, res, { error: err });
+      }
+      return sendError(500, res, { error: err });
     }
-    return ecstatic({
-      root: wwwDir
-    })(req, res);
+
+    // serveIndexMiddleware(req, res);
+    if (pathStat.isDirectory() && !reqPath.endsWith('/')) {
+      res.statusCode = 302;
+      res.setHeader('location', reqPath + '/');
+      return res.end();
+    }
+    if (pathStat.isDirectory()) {
+      return await sendDirectoryContents(filePath, req, res);
+    }
+    if (pathStat.isFile() && filePath.endsWith('.html')) {
+      return await sendHtml(filePath, req, res);
+    }
+    if (pathStat.isFile()) {
+      return staticFileMiddleware(req, res);
+    }
+    return sendError(415, res, { error: 'Resource requested cannot be served.' });
   }
-
-  function serveHtml(req: IncomingMessage, res: ServerResponse)  {
-    const urlSegments = url.parse(req.url || '');
-    const filePath = (urlSegments.pathname !== '/') ? urlSegments.pathname : '/index.html';
-
-    const indexFileName = path.join(wwwDir, filePath || '');
-
-    fs.readFile(indexFileName, (err, indexHtml) => {
-      const htmlString: string = indexHtml.toString().replace('</body>',
-        `<script type="text/javascript" src="//${lrScriptLocation}" charset="utf-8"></script>
-        </body>`);
-
-      res.setHeader('Content-Type', 'text/html');
-      res.end(htmlString);
-    });
-  }
-
-  createServer(handler).listen(port);
 }
 
 

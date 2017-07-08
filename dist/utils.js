@@ -8,6 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const path = require("path");
+const url = require("url");
+const fs = require("fs");
+const promisify_1 = require("./promisify");
+exports.fsStatPr = promisify_1.promisify(fs.stat);
+exports.fsReadFilePr = promisify_1.promisify(fs.readFile);
+exports.fsReadDirPr = promisify_1.promisify(fs.readdir);
 function findClosestOpenPort(host, port) {
     return __awaiter(this, void 0, void 0, function* () {
         function t(portToCheck) {
@@ -67,3 +74,24 @@ function parseOptions(optionInfo, argv) {
     }, {});
 }
 exports.parseOptions = parseOptions;
+function getRequestedPath(requestUrl) {
+    const parsed = url.parse(requestUrl);
+    decodeURIComponent(requestUrl);
+    return decodePathname(parsed.pathname || '');
+}
+exports.getRequestedPath = getRequestedPath;
+function getFileFromPath(wwwRoot, requestUrl) {
+    const pathname = getRequestedPath(requestUrl);
+    return path.normalize(path.join(wwwRoot, path.relative('/', pathname)));
+}
+exports.getFileFromPath = getFileFromPath;
+function decodePathname(pathname) {
+    const pieces = pathname.replace(/\\/g, "/").split('/');
+    return pieces.map((piece) => {
+        piece = decodeURIComponent(piece);
+        if (process.platform === 'win32' && /\\/.test(piece)) {
+            throw new Error('Invalid forward slash character');
+        }
+        return piece;
+    }).join('/');
+}

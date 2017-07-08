@@ -1,6 +1,7 @@
 export interface InputOptions {
-  root: string
-  address: string
-  httpPort: number
-  liveReloadPort: number
+  [key: string]: InputType
 }
+export type InputType = {
+  default: string | number | boolean;
+  type: String | Number | Boolean;
+};

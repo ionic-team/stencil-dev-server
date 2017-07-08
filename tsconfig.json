@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowUnreachableCode": false,
+    "noUnusedLocals": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitAny": true,
