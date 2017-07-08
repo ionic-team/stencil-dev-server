@@ -30,10 +30,15 @@ export function serveDirContents(wwwDir: string) {
     if (!templateSrc) {
       throw new Error('wait, where is my template src.');
     }
-    const fileHtml = files
+    files = files
       .filter((fileName) => '.' !== fileName[0]) // remove hidden files
-      .sort()
-      .map((fileName) => (`<a href="${url.resolve(req.url || '/', fileName)}">${fileName}</a>`))
+      .sort();
+
+    if (req.url !== '/') {
+      files.unshift('..');
+    }
+
+    const fileHtml = files.map((fileName) => (`<a href="${url.resolve(req.url || '/', fileName)}">${fileName}</a>`))
       .join('<br/>\n');
 
     const templateHtml = templateSrc.toString()
