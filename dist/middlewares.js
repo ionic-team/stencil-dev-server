@@ -65,7 +65,7 @@ function serveDirContents(wwwDir) {
       }
       body {
         margin: 50px auto;
-        width: 80%;
+        width: 60%;
       }
       span.denote {
         font-weight: 100;
