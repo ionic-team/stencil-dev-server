@@ -1,7 +1,8 @@
 import * as path from 'path';
 import * as url from 'url';
+import * as fs from 'fs';
 import { IncomingMessage, ServerResponse } from 'http';
-import { fsReadFilePr, fsReadDirPr } from './utils';
+import { fsReadFilePr, fsReadDirPr, fsStatPr } from './utils';
 
 export function serveHtml(wwwDir: string, lrScriptLocation: string) {
   return async function(filePath: string, req: IncomingMessage, res: ServerResponse) {
@@ -39,14 +40,42 @@ export function serveDirContents(wwwDir: string) {
       .filter((fileName) => '.' !== fileName[0]) // remove hidden files
       .sort();
 
+    const fileStats: fs.Stats[] = await Promise.all(files.map((fileName) =>
+      fsStatPr(path.join(dirPath, fileName))
+    ));
+
     if (dirUrl !== '/') {
+      const dirStat = await fsStatPr(dirPath);
       files.unshift('..');
+      fileStats.unshift(dirStat);
     }
 
-    const fileHtml = files.map((fileName) => (`<a href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`))
+    const fileHtml = files
+      .map((fileName, index) => {
+        const isDirectory = fileStats[index].isDirectory();
+        return (
+          `${isDirectory ? 'd' : '-'} <a class="${
+             isDirectory ? 'directory' : 'file'
+            }" href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`
+        );
+      })
       .join('<br/>\n');
 
     const templateHtml = templateSrc.toString()
+      .replace('{style}', `
+      html {
+       font-family: Courier New;
+      }
+      body {
+        margin: 50px auto;
+        width: 80%;
+      }
+      a, a:visited {
+        color: #000;
+        display: inline-block;
+        margin: 2px 0;
+      }
+      `)
       .replace('{files}', fileHtml)
       .replace('{linked-path}', dirUrl.replace(/\//g,' / '));
 

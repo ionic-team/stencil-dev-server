@@ -45,12 +45,33 @@ function serveDirContents(wwwDir) {
             files = files
                 .filter((fileName) => '.' !== fileName[0]) // remove hidden files
                 .sort();
+            const fileStats = yield Promise.all(files.map((fileName) => utils_1.fsStatPr(path.join(dirPath, fileName))));
             if (dirUrl !== '/') {
+                const dirStat = yield utils_1.fsStatPr(dirPath);
                 files.unshift('..');
+                fileStats.unshift(dirStat);
             }
-            const fileHtml = files.map((fileName) => (`<a href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`))
+            const fileHtml = files
+                .map((fileName, index) => {
+                const isDirectory = fileStats[index].isDirectory();
+                return (`${isDirectory ? 'd' : '-'} <a class="${isDirectory ? 'directory' : 'file'}" href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`);
+            })
                 .join('<br/>\n');
             const templateHtml = templateSrc.toString()
+                .replace('{style}', `
+      html {
+       font-family: Courier New;
+      }
+      body {
+        margin: 50px auto;
+        width: 80%;
+      }
+      a, a:visited {
+        color: #000;
+        display: inline-block;
+        margin: 2px 0;
+      }
+      `)
                 .replace('{files}', fileHtml)
                 .replace('{linked-path}', dirUrl.replace(/\//g, ' / '));
             res.setHeader('Content-Type', 'text/html');
