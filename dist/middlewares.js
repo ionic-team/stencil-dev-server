@@ -68,7 +68,9 @@ function serveDirContents(wwwDir) {
         width: 80%;
       }
       span.denote {
-        font-family: Courier New;
+        font-weight: 100;
+        display: inline-block;
+        width: 8px;
       }
       h1 > a, h1 > a:visited {
         text-decoration: none;
