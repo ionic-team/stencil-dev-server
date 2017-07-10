@@ -54,22 +54,30 @@ function serveDirContents(wwwDir) {
             const fileHtml = files
                 .map((fileName, index) => {
                 const isDirectory = fileStats[index].isDirectory();
-                return (`${isDirectory ? 'd' : '-'} <a class="${isDirectory ? 'directory' : 'file'}" href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`);
+                return (`<span class="denote">${isDirectory ? 'd' : '-'}</span> <a class="${isDirectory ? 'directory' : 'file'}" href="${url.resolve(dirUrl, fileName)}">${fileName}</a>`);
             })
                 .join('<br/>\n');
             const templateHtml = templateSrc.toString()
                 .replace('{style}', `
       html {
-       font-family: Courier New;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+        color: #16161d;
       }
       body {
         margin: 50px auto;
         width: 80%;
       }
+      span.denote {
+        font-family: Courier New;
+      }
+      h1 > a, h1 > a:visited {
+        text-decoration: none;
+        color: #5850ff;
+      }
       a, a:visited {
-        color: #000;
+        color: #16161d;
         display: inline-block;
-        margin: 2px 0;
+        margin: 2px 0 2px 6px;
       }
       `)
                 .replace('{files}', fileHtml)
