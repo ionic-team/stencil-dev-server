@@ -3,6 +3,7 @@ import * as chalk from 'chalk';
 import * as fs from 'fs';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
+import * as opn from 'opn';
 import { watch } from 'chokidar';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { findClosestOpenPort, parseOptions, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
@@ -45,12 +46,15 @@ export async function run(argv: string[]) {
 
   console.log(`listening on ${options.address}:${foundHttpPort}`);
   console.log(`watching ${wwwRoot}`);
+
+  opn(`http://${options.address}:${foundHttpPort}`);
 }
 
 function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
   const staticFileMiddleware = ecstatic({ root: wwwDir });
   const sendHtml = serveHtml(wwwDir, lrScriptLocation);
   const sendDirectoryContents = serveDirContents(wwwDir);
+  let firstRequestFlag = true;
 
   return async function(req: IncomingMessage, res: ServerResponse) {
     const reqPath = getRequestedPath(req.url || '');
@@ -69,21 +73,44 @@ function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
       return sendError(500, res, { error: err });
     }
 
-    // serveIndexMiddleware(req, res);
+    // If this is the first request then try to serve an index.html file in the root dir
+    if (firstRequestFlag && reqPath === '/') {
+      firstRequestFlag = false;
+      const indexFilePath = path.join(filePath, 'index.html');
+      let indexFileStat: fs.Stats | undefined;
+      try {
+        indexFileStat = await fsStatPr(indexFilePath);
+      } catch (e) {
+        indexFileStat = undefined;
+      }
+      if (indexFileStat && indexFileStat.isFile()) {
+        return await sendHtml(indexFilePath, req, res);
+      }
+    }
+
+    // If the request is to a directory but does not end in slash then redirect to use a slash
     if (pathStat.isDirectory() && !reqPath.endsWith('/')) {
       res.statusCode = 302;
       res.setHeader('location', reqPath + '/');
       return res.end();
     }
+
+    // If the request is to a directory then serve the directory contents
     if (pathStat.isDirectory()) {
       return await sendDirectoryContents(filePath, req, res);
     }
+
+    // If the request is to a file and it is an html file then use sendHtml to parse and send on
     if (pathStat.isFile() && filePath.endsWith('.html')) {
       return await sendHtml(filePath, req, res);
     }
+
+    // If the request is to a static file then just send it on using the static file middleware
     if (pathStat.isFile()) {
       return staticFileMiddleware(req, res);
     }
+
+    // Not sure what you are requesting but lets just send an error
     return sendError(415, res, { error: 'Resource requested cannot be served.' });
   }
 }
