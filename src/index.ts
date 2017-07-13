@@ -44,10 +44,10 @@ export async function run(argv: string[]) {
 
   createServer(requestHandler).listen(foundHttpPort);
 
-  console.log(`listening on ${options.address}:${foundHttpPort}`);
+  console.log(`listening on ${getAddressForBrowser(options.address)}:${foundHttpPort}`);
   console.log(`watching ${wwwRoot}`);
 
-  opn(`http://${options.address}:${foundHttpPort}`);
+  opn(`http://${getAddressForBrowser(options.address)}:${foundHttpPort}`);
 }
 
 function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
@@ -137,7 +137,7 @@ function createLiveReload(port: number, address: string, wwwDir: string): [strin
   liveReloadServer.listen(port, address);
 
   return [
-    `${address}:${port}/livereload.js?snipver=1`,
+    `${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
     (changedFiles: string[]) => {
       liveReloadServer.changed({
         body: {
@@ -148,4 +148,8 @@ function createLiveReload(port: number, address: string, wwwDir: string): [strin
       });
     }
   ];
+}
+
+function getAddressForBrowser(ipAddress: string) {
+  return (ipAddress === '0.0.0.0') ? 'localhost' : ipAddress;
 }

@@ -47,9 +47,9 @@ function run(argv) {
         createFileWatcher(wwwRoot, emitLiveReloadUpdate);
         const requestHandler = createHttpRequestHandler(wwwRoot, lrScriptLocation);
         http_1.createServer(requestHandler).listen(foundHttpPort);
-        console.log(`listening on ${options.address}:${foundHttpPort}`);
+        console.log(`listening on ${getAddressForBrowser(options.address)}:${foundHttpPort}`);
         console.log(`watching ${wwwRoot}`);
-        opn(`http://${options.address}:${foundHttpPort}`);
+        opn(`http://${getAddressForBrowser(options.address)}:${foundHttpPort}`);
     });
 }
 exports.run = run;
@@ -129,7 +129,7 @@ function createLiveReload(port, address, wwwDir) {
     const liveReloadServer = tinylr();
     liveReloadServer.listen(port, address);
     return [
-        `${address}:${port}/livereload.js?snipver=1`,
+        `${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
         (changedFiles) => {
             liveReloadServer.changed({
                 body: {
@@ -138,4 +138,7 @@ function createLiveReload(port, address, wwwDir) {
             });
         }
     ];
+}
+function getAddressForBrowser(ipAddress) {
+    return (ipAddress === '0.0.0.0') ? 'localhost' : ipAddress;
 }
