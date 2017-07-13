@@ -48,7 +48,9 @@ const optionInfo = {
 function run(argv) {
     return __awaiter(this, void 0, void 0, function* () {
         const cliDefaultedOptions = utils_1.parseOptions(optionInfo, argv);
-        cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts.split(',');
+        cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts
+            .split(',')
+            .filter((name) => !!name);
         const configOptions = yield utils_1.parseConfigFile(process.cwd(), cliDefaultedOptions.config);
         const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
             const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];

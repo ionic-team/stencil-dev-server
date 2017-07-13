@@ -41,7 +41,9 @@ const optionInfo = {
 
 export async function run(argv: string[]) {
   const cliDefaultedOptions = parseOptions(optionInfo, argv);
-  cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts.split(',');
+  cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts
+    .split(',')
+    .filter((name: string) => !!name);
 
   const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
 
