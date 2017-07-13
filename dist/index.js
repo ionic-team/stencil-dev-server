@@ -48,6 +48,7 @@ const optionInfo = {
 function run(argv) {
     return __awaiter(this, void 0, void 0, function* () {
         const cliDefaultedOptions = utils_1.parseOptions(optionInfo, argv);
+        cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts.split(',');
         const configOptions = yield utils_1.parseConfigFile(process.cwd(), cliDefaultedOptions.config);
         const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
             const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];
@@ -62,7 +63,6 @@ function run(argv) {
         const browserUrl = getAddressForBrowser(options.address);
         const [lrScriptLocation, emitLiveReloadUpdate] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
         const jsScriptLocations = options.additionalJsScripts
-            .split(',')
             .map((filePath) => filePath.trim())
             .concat(lrScriptLocation);
         createFileWatcher(wwwRoot, emitLiveReloadUpdate);
@@ -77,7 +77,6 @@ exports.run = run;
 function createHttpRequestHandler(wwwDir, jsScriptsList) {
     const jsScriptsMap = jsScriptsList.reduce((map, fileUrl) => {
         const urlParts = url.parse(fileUrl);
-        console.log(urlParts);
         if (urlParts.host) {
             map[fileUrl] = fileUrl;
         }

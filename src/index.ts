@@ -41,6 +41,8 @@ const optionInfo = {
 
 export async function run(argv: string[]) {
   const cliDefaultedOptions = parseOptions(optionInfo, argv);
+  cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts.split(',');
+
   const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
 
   const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
@@ -58,7 +60,6 @@ export async function run(argv: string[]) {
 
   const [ lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
   const jsScriptLocations: string[] = options.additionalJsScripts
-    .split(',')
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
 
@@ -76,7 +77,6 @@ export async function run(argv: string[]) {
 function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
   const jsScriptsMap = jsScriptsList.reduce((map, fileUrl: string): { [key: string ]: string } => {
     const urlParts = url.parse(fileUrl);
-    console.log(urlParts);
     if (urlParts.host) {
       map[fileUrl] = fileUrl;
     } else {
