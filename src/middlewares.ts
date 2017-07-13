@@ -4,13 +4,14 @@ import * as fs from 'fs';
 import { IncomingMessage, ServerResponse } from 'http';
 import { fsReadFilePr, fsReadDirPr, fsStatPr } from './utils';
 
-export function serveHtml(wwwDir: string, lrScriptLocation: string) {
+export function serveHtml(wwwDir: string, scriptLocations: string[]) {
   return async function(filePath: string, req: IncomingMessage, res: ServerResponse) {
     const indexHtml = await fsReadFilePr(filePath);
+    const appendString = scriptLocations.map(sl => `<script type="text/javascript" src="${sl}" charset="utf-8"></script>`).join('\n');
     const htmlString: string = indexHtml.toString()
       .replace(
         `</body>`,
-        `<script type="text/javascript" src="//${lrScriptLocation}" charset="utf-8"></script>
+        `${appendString}
         </body>`
       );
 
@@ -70,6 +71,21 @@ export function serveDirContents(wwwDir: string) {
     res.setHeader('Content-Type', 'text/html');
     res.end(templateHtml);
   }
+}
+export async function sendFile(contentType: string, filePath: string, req: IncomingMessage, res: ServerResponse) {
+    var stat = await fsStatPr(filePath);
+
+    if (!stat.isFile()) {
+      return sendError(404, res, { error: 'File not found'});
+    }
+
+    res.writeHead(200, {
+      'Content-Type': contentType,
+      'Content-Length': stat.size
+    });
+
+    fs.createReadStream(filePath)
+      .pipe(res);
 }
 
 export function sendError(httpStatus: number, res: ServerResponse, content: { [key: string]: any } = {}) {

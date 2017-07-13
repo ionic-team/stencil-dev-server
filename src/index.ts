@@ -1,13 +1,16 @@
 import * as path from 'path';
 import * as chalk from 'chalk';
 import * as fs from 'fs';
+import * as url from 'url';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
 import { watch } from 'chokidar';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { findClosestOpenPort, parseOptions, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
-import { serveHtml, serveDirContents, sendError } from './middlewares';
+import { findClosestOpenPort, parseOptions, parseConfigFile, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
+import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
+
+const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
 const optionInfo = {
   root: {
@@ -25,34 +28,67 @@ const optionInfo = {
   liveReloadPort: {
     default: 35729,
     type: Number
+  },
+  additionalJsScripts: {
+    default: '',
+    type: String
+  },
+  config: {
+    default: './stencil.config.js',
+    type: String
   }
 }
 
 export async function run(argv: string[]) {
-  const options = parseOptions(optionInfo, argv);
+  const cliDefaultedOptions = parseOptions(optionInfo, argv);
+  const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
+
+  const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
+    const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];
+    options[optionName] = newValue;
+    return options;
+  }, <{ [key: string]: any }>{});
 
   const [ foundHttpPort, foundLiveReloadPort ] = await Promise.all([
     findClosestOpenPort(options.address, options.httpPort),
     findClosestOpenPort(options.address, options.liveReloadPort),
   ]);
   const wwwRoot = path.resolve(options.root);
+  const browserUrl = getAddressForBrowser(options.address);
 
   const [ lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
+  const jsScriptLocations: string[] = options.additionalJsScripts
+    .split(',')
+    .map((filePath: string) => filePath.trim())
+    .concat(lrScriptLocation);
 
   createFileWatcher(wwwRoot, emitLiveReloadUpdate);
-  const requestHandler = createHttpRequestHandler(wwwRoot, lrScriptLocation);
+  const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
 
   createServer(requestHandler).listen(foundHttpPort);
 
-  console.log(`listening on ${getAddressForBrowser(options.address)}:${foundHttpPort}`);
+  console.log(`listening on ${browserUrl}:${foundHttpPort}`);
   console.log(`watching ${wwwRoot}`);
 
-  opn(`http://${getAddressForBrowser(options.address)}:${foundHttpPort}`);
+  opn(`http://${browserUrl}:${foundHttpPort}`);
 }
 
-function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
+function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
+  const jsScriptsMap = jsScriptsList.reduce((map, fileUrl: string): { [key: string ]: string } => {
+    const urlParts = url.parse(fileUrl);
+    console.log(urlParts);
+    if (urlParts.host) {
+      map[fileUrl] = fileUrl;
+    } else {
+      const baseFileName = path.basename(fileUrl);
+      map[path.join(RESERVED_STENCIL_PATH, 'js_includes', baseFileName)] = path.resolve(process.cwd(), fileUrl);
+    }
+    return map;
+  }, <{ [key: string ]: string }>{});
+
   const staticFileMiddleware = ecstatic({ root: wwwDir });
-  const sendHtml = serveHtml(wwwDir, lrScriptLocation);
+  const devServerFileMiddleware = ecstatic({ root: path.resolve(__dirname, '..', 'assets') });
+  const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
   let firstRequestFlag = true;
 
@@ -60,6 +96,16 @@ function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
     const reqPath = getRequestedPath(req.url || '');
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
+
+
+    if (jsScriptsMap[(req.url || '')]) {
+      return sendFile('application/javascript', jsScriptsMap[(req.url || '')], req, res);
+    }
+
+    // If the request is to a static file then just send it on using the static file middleware
+    if ((req.url || '').startsWith(RESERVED_STENCIL_PATH)) {
+      return devServerFileMiddleware(req, res);
+    }
 
     try {
       pathStat = await fsStatPr(filePath);
@@ -105,7 +151,6 @@ function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
       return await sendHtml(filePath, req, res);
     }
 
-    // If the request is to a static file then just send it on using the static file middleware
     if (pathStat.isFile()) {
       return staticFileMiddleware(req, res);
     }
@@ -118,7 +163,8 @@ function createHttpRequestHandler(wwwDir: string, lrScriptLocation: string) {
 
 function createFileWatcher(wwwDir: string, changeCb: Function) {
   const watcher = watch(`${wwwDir}`, {
-    cwd: wwwDir
+    cwd: wwwDir,
+    ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
   });
 
   watcher.on('change', (filePath: string) => {
@@ -137,7 +183,7 @@ function createLiveReload(port: number, address: string, wwwDir: string): [strin
   liveReloadServer.listen(port, address);
 
   return [
-    `${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
+    `http://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
     (changedFiles: string[]) => {
       liveReloadServer.changed({
         body: {

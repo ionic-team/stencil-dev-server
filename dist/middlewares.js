@@ -10,13 +10,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 const path = require("path");
 const url = require("url");
+const fs = require("fs");
 const utils_1 = require("./utils");
-function serveHtml(wwwDir, lrScriptLocation) {
+function serveHtml(wwwDir, scriptLocations) {
     return function (filePath, req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const indexHtml = yield utils_1.fsReadFilePr(filePath);
+            const appendString = scriptLocations.map(sl => `<script type="text/javascript" src="${sl}" charset="utf-8"></script>`).join('\n');
             const htmlString = indexHtml.toString()
-                .replace(`</body>`, `<script type="text/javascript" src="//${lrScriptLocation}" charset="utf-8"></script>
+                .replace(`</body>`, `${appendString}
         </body>`);
             res.setHeader('Content-Type', 'text/html');
             res.end(htmlString);
@@ -67,6 +69,21 @@ function serveDirContents(wwwDir) {
     };
 }
 exports.serveDirContents = serveDirContents;
+function sendFile(contentType, filePath, req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        var stat = yield utils_1.fsStatPr(filePath);
+        if (!stat.isFile()) {
+            return sendError(404, res, { error: 'File not found' });
+        }
+        res.writeHead(200, {
+            'Content-Type': contentType,
+            'Content-Length': stat.size
+        });
+        fs.createReadStream(filePath)
+            .pipe(res);
+    });
+}
+exports.sendFile = sendFile;
 function sendError(httpStatus, res, content = {}) {
     res.writeHead(httpStatus, { "Content-Type": "text/plain" });
     res.write(JSON.stringify(content, null, 2));

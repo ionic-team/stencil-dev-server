@@ -64,6 +64,24 @@ export function parseOptions(optionInfo: { [key: string]: any }, argv: string[])
   }, <{[key: string]: any}>{});
 }
 
+
+export async function parseConfigFile(baseDir: string, filePath: string): Promise<{ [key: string]: any }> {
+  let config: { [key: string]: any} = {};
+
+  try {
+    const configFile = await import(path.resolve(baseDir, filePath));
+    config = configFile.config;
+  } catch (err) {
+    if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+      console.log(`The specified configFile does not exist: ${filePath}`);
+    }
+    if (err.code === 'EACCES') {
+      console.log(`You do not have permission to read the specified configFile: ${filePath}`);
+    }
+  }
+  return config;
+}
+
 export function getRequestedPath(requestUrl: string) {
   const parsed = url.parse(requestUrl);
 

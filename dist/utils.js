@@ -74,6 +74,25 @@ function parseOptions(optionInfo, argv) {
     }, {});
 }
 exports.parseOptions = parseOptions;
+function parseConfigFile(baseDir, filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let config = {};
+        try {
+            const configFile = yield Promise.resolve().then(function () { return require(path.resolve(baseDir, filePath)); });
+            config = configFile.config;
+        }
+        catch (err) {
+            if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+                console.log(`The specified configFile does not exist: ${filePath}`);
+            }
+            if (err.code === 'EACCES') {
+                console.log(`You do not have permission to read the specified configFile: ${filePath}`);
+            }
+        }
+        return config;
+    });
+}
+exports.parseConfigFile = parseConfigFile;
 function getRequestedPath(requestUrl) {
     const parsed = url.parse(requestUrl);
     decodeURIComponent(requestUrl);
