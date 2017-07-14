@@ -25,6 +25,10 @@ const optionInfo = {
         default: process.cwd(),
         type: String
     },
+    watchGlob: {
+        default: '**/*',
+        type: String
+    },
     address: {
         default: '0.0.0.0',
         type: String
@@ -68,7 +72,7 @@ function run(argv) {
         const jsScriptLocations = options.additionalJsScripts
             .map((filePath) => filePath.trim())
             .concat(lrScriptLocation);
-        createFileWatcher(wwwRoot, emitLiveReloadUpdate);
+        createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
         const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
         http_1.createServer(requestHandler).listen(foundHttpPort);
         console.log(`listening on ${browserUrl}:${foundHttpPort}`);
@@ -155,8 +159,9 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
         });
     };
 }
-function createFileWatcher(wwwDir, changeCb) {
-    const watcher = chokidar_1.watch(`${wwwDir}`, {
+function createFileWatcher(wwwDir, watchGlob, changeCb) {
+    const finalWatchGlob = `${wwwDir}/${watchGlob}`;
+    const watcher = chokidar_1.watch(finalWatchGlob, {
         cwd: wwwDir,
         ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
     });

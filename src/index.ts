@@ -18,6 +18,10 @@ const optionInfo = {
     default: process.cwd(),
     type: String
   },
+  watchGlob: {
+    default: '**/*',
+    type: String
+  },
   address: {
     default: '0.0.0.0',
     type: String
@@ -66,7 +70,7 @@ export async function run(argv: string[]) {
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
 
-  createFileWatcher(wwwRoot, emitLiveReloadUpdate);
+  createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
 
   createServer(requestHandler).listen(foundHttpPort);
@@ -164,8 +168,8 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
 }
 
 
-function createFileWatcher(wwwDir: string, changeCb: Function) {
-  const watcher = watch(`${wwwDir}`, {
+function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function) {
+  const watcher = watch(watchGlob, {
     cwd: wwwDir,
     ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
   });
