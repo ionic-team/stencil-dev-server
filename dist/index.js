@@ -15,6 +15,7 @@ const tinylr = require("tiny-lr");
 const ecstatic = require("ecstatic");
 const opn = require("opn");
 const chokidar_1 = require("chokidar");
+const debounce = require("lodash.debounce");
 const http_1 = require("http");
 const utils_1 = require("./utils");
 const middlewares_1 = require("./middlewares");
@@ -159,10 +160,10 @@ function createFileWatcher(wwwDir, changeCb) {
         cwd: wwwDir,
         ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
     });
-    watcher.on('change', (filePath) => {
+    watcher.on('change', debounce((filePath) => {
         console.log(`[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
         changeCb([filePath]);
-    });
+    }, 50));
     watcher.on('error', (err) => {
         console.error(err.toString());
     });

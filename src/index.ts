@@ -6,6 +6,7 @@ import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
 import { watch } from 'chokidar';
+import * as debounce from 'lodash.debounce';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { findClosestOpenPort, parseOptions, parseConfigFile, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
@@ -169,10 +170,10 @@ function createFileWatcher(wwwDir: string, changeCb: Function) {
     ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
   });
 
-  watcher.on('change', (filePath: string) => {
+  watcher.on('change', debounce((filePath: string) => {
     console.log(`[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
     changeCb([filePath]);
-  });
+  }, 50));
 
   watcher.on('error', (err: Error) => {
     console.error(err.toString());

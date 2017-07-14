@@ -24,6 +24,7 @@
     "chalk": "^2.0.1",
     "chokidar": "^1.7.0",
     "ecstatic": "^2.2.1",
+    "lodash.debounce": "^4.0.8",
     "opn": "^5.1.0",
     "tiny-lr": "^1.0.5"
   },
