@@ -62,6 +62,7 @@ export async function run(argv: string[]) {
     findClosestOpenPort(options.address, options.httpPort),
     findClosestOpenPort(options.address, options.liveReloadPort),
   ]);
+  console.log(options);
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
 

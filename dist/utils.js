@@ -79,7 +79,7 @@ function parseConfigFile(baseDir, filePath) {
         let config = {};
         try {
             const configFile = yield Promise.resolve().then(function () { return require(path.resolve(baseDir, filePath)); });
-            config = configFile.config;
+            config = configFile.devServer || {};
         }
         catch (err) {
             if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {

@@ -66,6 +66,7 @@ function run(argv) {
             utils_1.findClosestOpenPort(options.address, options.httpPort),
             utils_1.findClosestOpenPort(options.address, options.liveReloadPort),
         ]);
+        console.log(options);
         const wwwRoot = path.resolve(options.root);
         const browserUrl = getAddressForBrowser(options.address);
         const [lrScriptLocation, emitLiveReloadUpdate] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
@@ -160,8 +161,7 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
     };
 }
 function createFileWatcher(wwwDir, watchGlob, changeCb) {
-    const finalWatchGlob = `${wwwDir}/${watchGlob}`;
-    const watcher = chokidar_1.watch(finalWatchGlob, {
+    const watcher = chokidar_1.watch(watchGlob, {
         cwd: wwwDir,
         ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
     });

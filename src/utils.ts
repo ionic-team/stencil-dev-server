@@ -70,7 +70,7 @@ export async function parseConfigFile(baseDir: string, filePath: string): Promis
 
   try {
     const configFile = await import(path.resolve(baseDir, filePath));
-    config = configFile.config;
+    config = configFile.devServer || {};
   } catch (err) {
     if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
       console.log(`The specified configFile does not exist: ${filePath}`);
