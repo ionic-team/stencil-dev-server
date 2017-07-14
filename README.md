@@ -16,7 +16,10 @@ There are a number of options available, but all have sane defaults.
 
 - **--root**
   - The directory that should be watched and served
-  - It defaults to the current directory that the command was executed from. *./*
+  - It defaults to the current directory that the command was executed from.
+- **--watchGlob**
+  - The pattern of files to watch in the root directory for changes.
+  - The glob defaults to **\*\*/\*\***.
 - **--address**
   - The ip address that the server should listen to.
   - Defaults to *0.0.0.0*. Point your browser to localhost.
@@ -35,13 +38,14 @@ There are a number of options available, but all have sane defaults.
 Config File Structure
 
 ```js
-{
+exports.devServer = {
   root: './',
   additionalJSScripts: [
     'http://localhost:3529/debug.js',
     './scripts/additionalDebug.js'
-  ]
-}
+  ],
+  watchGlob: '**/*'
+};
 ```
   
 [npm-badge]: https://img.shields.io/npm/v/@stencil/dev-server.svg?style=flat-square
