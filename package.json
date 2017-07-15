@@ -1,6 +1,6 @@
 {
   "name": "@stencil/dev-server",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Tiny LiveReload server that watches a single directory",
   "main": "index.js",
   "bin": {
