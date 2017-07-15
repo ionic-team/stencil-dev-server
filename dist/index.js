@@ -66,7 +66,6 @@ function run(argv) {
             utils_1.findClosestOpenPort(options.address, options.httpPort),
             utils_1.findClosestOpenPort(options.address, options.liveReloadPort),
         ]);
-        console.log(options);
         const wwwRoot = path.resolve(options.root);
         const browserUrl = getAddressForBrowser(options.address);
         const [lrScriptLocation, emitLiveReloadUpdate] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
@@ -98,7 +97,6 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
     const devServerFileMiddleware = ecstatic({ root: path.resolve(__dirname, '..', 'assets') });
     const sendHtml = middlewares_1.serveHtml(wwwDir, Object.keys(jsScriptsMap));
     const sendDirectoryContents = middlewares_1.serveDirContents(wwwDir);
-    let firstRequestFlag = true;
     return function (req, res) {
         return __awaiter(this, void 0, void 0, function* () {
             const reqPath = utils_1.getRequestedPath(req.url || '');
@@ -124,8 +122,7 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
                 return middlewares_1.sendError(500, res, { error: err });
             }
             // If this is the first request then try to serve an index.html file in the root dir
-            if (firstRequestFlag && reqPath === '/') {
-                firstRequestFlag = false;
+            if (reqPath === '/') {
                 const indexFilePath = path.join(filePath, 'index.html');
                 let indexFileStat;
                 try {

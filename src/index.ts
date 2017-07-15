@@ -62,7 +62,6 @@ export async function run(argv: string[]) {
     findClosestOpenPort(options.address, options.httpPort),
     findClosestOpenPort(options.address, options.liveReloadPort),
   ]);
-  console.log(options);
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
 
@@ -98,7 +97,6 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
   const devServerFileMiddleware = ecstatic({ root: path.resolve(__dirname, '..', 'assets') });
   const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
-  let firstRequestFlag = true;
 
   return async function(req: IncomingMessage, res: ServerResponse) {
     const reqPath = getRequestedPath(req.url || '');
@@ -128,8 +126,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
     }
 
     // If this is the first request then try to serve an index.html file in the root dir
-    if (firstRequestFlag && reqPath === '/') {
-      firstRequestFlag = false;
+    if (reqPath === '/') {
       const indexFilePath = path.join(filePath, 'index.html');
       let indexFileStat: fs.Stats | undefined;
       try {
