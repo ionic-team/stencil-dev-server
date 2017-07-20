@@ -131,12 +131,6 @@ function createHttpRequestHandler(wwwDir, html5Mode, jsScriptsList) {
             }
             catch (err) {
                 if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-                    if (html5Mode) {
-                        const indexFileResponse = serveIndexFile();
-                        if (indexFileResponse) {
-                            return indexFileResponse;
-                        }
-                    }
                     return middlewares_1.sendError(404, res, { error: err });
                 }
                 if (err.code === 'EACCES') {

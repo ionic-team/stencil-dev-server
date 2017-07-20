@@ -133,10 +133,6 @@ function createHttpRequestHandler(wwwDir: string, html5Mode: boolean, jsScriptsL
       pathStat = await fsStatPr(filePath);
     } catch (err) {
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        if (html5Mode) {
-          const indexFileResponse = serveIndexFile();
-          if(indexFileResponse) { return indexFileResponse; }
-        }
         return sendError(404, res, { error: err });
       }
       if (err.code === 'EACCES') {
