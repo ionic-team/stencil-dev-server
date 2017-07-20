@@ -68,7 +68,6 @@ function run(argv) {
         ]);
         const wwwRoot = path.resolve(options.root);
         const browserUrl = getAddressForBrowser(options.address);
-        console.log('wwwroot', wwwRoot);
         const [lrScriptLocation, emitLiveReloadUpdate] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
         const jsScriptLocations = options.additionalJsScripts
             .map((filePath) => filePath.trim())
