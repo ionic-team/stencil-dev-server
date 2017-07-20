@@ -15,7 +15,7 @@ const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
 const optionInfo = {
   root: {
-    default: process.cwd(),
+    default: path.join(process.cwd(), 'www'),
     type: String
   },
   watchGlob: {
@@ -64,6 +64,8 @@ export async function run(argv: string[]) {
   ]);
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
+
+  console.log('wwwroot', wwwRoot)
 
   const [ lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
   const jsScriptLocations: string[] = options.additionalJsScripts
