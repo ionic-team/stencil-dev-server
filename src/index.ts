@@ -18,6 +18,10 @@ const optionInfo = {
     default: path.join(process.cwd(), 'www'),
     type: String
   },
+  html5Mode: {
+    default: true,
+    type: Boolean
+  },
   watchGlob: {
     default: '**/*',
     type: String
@@ -71,7 +75,7 @@ export async function run(argv: string[]) {
     .concat(lrScriptLocation);
 
   createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
-  const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
+  const requestHandler = createHttpRequestHandler(wwwRoot, options.html5Mode, jsScriptLocations);
 
   createServer(requestHandler).listen(foundHttpPort);
 
@@ -81,7 +85,7 @@ export async function run(argv: string[]) {
   opn(`http://${browserUrl}:${foundHttpPort}`);
 }
 
-function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
+function createHttpRequestHandler(wwwDir: string, html5Mode: boolean, jsScriptsList: string[]) {
   const jsScriptsMap = jsScriptsList.reduce((map, fileUrl: string): { [key: string ]: string } => {
     const urlParts = url.parse(fileUrl);
     if (urlParts.host) {
@@ -103,6 +107,18 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
 
+    const serveIndexFile = async () => {
+      const indexFilePath = path.join(wwwDir, 'index.html');
+      let indexFileStat: fs.Stats | undefined;
+      try {
+        indexFileStat = await fsStatPr(indexFilePath);
+      } catch (e) {
+        indexFileStat = undefined;
+      }
+      if (indexFileStat && indexFileStat.isFile()) {
+        return await sendHtml(indexFilePath, req, res);
+      }
+    }
 
     if (jsScriptsMap[(req.url || '')]) {
       return sendFile('application/javascript', jsScriptsMap[(req.url || '')], req, res);
@@ -117,6 +133,10 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
       pathStat = await fsStatPr(filePath);
     } catch (err) {
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+        if (html5Mode) {
+          const indexFileResponse = serveIndexFile();
+          if(indexFileResponse) { return indexFileResponse; }
+        }
         return sendError(404, res, { error: err });
       }
       if (err.code === 'EACCES') {
@@ -127,16 +147,8 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
 
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
-      const indexFilePath = path.join(filePath, 'index.html');
-      let indexFileStat: fs.Stats | undefined;
-      try {
-        indexFileStat = await fsStatPr(indexFilePath);
-      } catch (e) {
-        indexFileStat = undefined;
-      }
-      if (indexFileStat && indexFileStat.isFile()) {
-        return await sendHtml(indexFilePath, req, res);
-      }
+      const indexFileResponse = serveIndexFile();
+      if(indexFileResponse) { return indexFileResponse; }
     }
 
     // If the request is to a directory but does not end in slash then redirect to use a slash
