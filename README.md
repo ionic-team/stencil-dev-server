@@ -30,7 +30,7 @@ There are a number of options available, but all have sane defaults.
   - The port that the live-reload server should use. If the number provided is in use it will choose another.
   - Defaults to *35729*.
 - **--additionalJsScripts**
-  - A comma seperated list of javascript files that you would like appended to all html page body tags. This allows you to expand the dev server to do additional behaviors.
+  - A comma separated list of javascript files that you would like appended to all html page body tags. This allows you to expand the dev server to do additional behaviors.
 - **--config**
   - The path to a config file for the dev server. This allows you to keep a specific set of default parameters in a configuration file.
   - Defaults to *./stencil.config.js*
