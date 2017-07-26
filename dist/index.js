@@ -172,10 +172,11 @@ function createFileWatcher(wwwDir, watchGlob, changeCb) {
         cwd: wwwDir,
         ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
     });
-    watcher.on('change', debounce((filePath) => {
+    function fileChanged(filePath) {
         console.log(`[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
         changeCb([filePath]);
-    }, 50));
+    }
+    watcher.on('change', debounce(fileChanged, 500));
     watcher.on('error', (err) => {
         console.error(err.toString());
     });
