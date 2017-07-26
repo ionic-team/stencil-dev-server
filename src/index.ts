@@ -15,7 +15,7 @@ const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
 const optionInfo = {
   root: {
-    default: path.join(process.cwd(), 'www'),
+    default: 'www',
     type: String
   },
   html5Mode: {
@@ -80,7 +80,8 @@ export async function run(argv: string[]) {
   createServer(requestHandler).listen(foundHttpPort);
 
   console.log(`listening on ${browserUrl}:${foundHttpPort}`);
-  console.log(`watching ${wwwRoot}`);
+  console.log(`serving: ${wwwRoot}`);
+  console.log(`watching: ${wwwRoot} ${options.watchGlob}`)
 
   opn(`http://${browserUrl}:${foundHttpPort}`);
 }
@@ -143,8 +144,10 @@ function createHttpRequestHandler(wwwDir: string, html5Mode: boolean, jsScriptsL
 
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
-      const indexFileResponse = serveIndexFile();
-      if(indexFileResponse) { return indexFileResponse; }
+      const indexFileResponse = await serveIndexFile();
+      if (indexFileResponse) {
+        return indexFileResponse;
+      }
     }
 
     // If the request is to a directory but does not end in slash then redirect to use a slash

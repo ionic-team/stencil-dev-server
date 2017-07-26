@@ -22,7 +22,7 @@ const middlewares_1 = require("./middlewares");
 const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 const optionInfo = {
     root: {
-        default: path.join(process.cwd(), 'www'),
+        default: 'www',
         type: String
     },
     html5Mode: {
@@ -80,7 +80,8 @@ function run(argv) {
         const requestHandler = createHttpRequestHandler(wwwRoot, options.html5Mode, jsScriptLocations);
         http_1.createServer(requestHandler).listen(foundHttpPort);
         console.log(`listening on ${browserUrl}:${foundHttpPort}`);
-        console.log(`watching ${wwwRoot}`);
+        console.log(`serving: ${wwwRoot}`);
+        console.log(`watching: ${wwwRoot} ${options.watchGlob}`);
         opn(`http://${browserUrl}:${foundHttpPort}`);
     });
 }
@@ -140,7 +141,7 @@ function createHttpRequestHandler(wwwDir, html5Mode, jsScriptsList) {
             }
             // If this is the first request then try to serve an index.html file in the root dir
             if (reqPath === '/') {
-                const indexFileResponse = serveIndexFile();
+                const indexFileResponse = yield serveIndexFile();
                 if (indexFileResponse) {
                     return indexFileResponse;
                 }
