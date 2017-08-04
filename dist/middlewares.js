@@ -20,7 +20,11 @@ function serveHtml(wwwDir, scriptLocations) {
             const htmlString = indexHtml.toString()
                 .replace(`</body>`, `${appendString}
         </body>`);
-            res.setHeader('Content-Type', 'text/html');
+            res.writeHead(200, {
+                'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+                'Expires': '0',
+                'Content-Type': 'text/html'
+            });
             res.end(htmlString);
         });
     };
@@ -63,7 +67,11 @@ function serveDirContents(wwwDir) {
                 .replace('{directory}', dirPath)
                 .replace('{files}', fileHtml)
                 .replace('{linked-path}', dirUrl.replace(/\//g, ' / '));
-            res.setHeader('Content-Type', 'text/html');
+            res.writeHead(200, {
+                'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+                'Expires': '0',
+                'Content-Type': 'text/html'
+            });
             res.end(templateHtml);
         });
     };
@@ -76,6 +84,8 @@ function sendFile(contentType, filePath, req, res) {
             return sendError(404, res, { error: 'File not found' });
         }
         res.writeHead(200, {
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            'Expires': '0',
             'Content-Type': contentType,
             'Content-Length': stat.size
         });
@@ -85,7 +95,11 @@ function sendFile(contentType, filePath, req, res) {
 }
 exports.sendFile = sendFile;
 function sendError(httpStatus, res, content = {}) {
-    res.writeHead(httpStatus, { "Content-Type": "text/plain" });
+    res.writeHead(httpStatus, {
+        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+        'Expires': '0',
+        'Content-Type': 'text/plain'
+    });
     res.write(JSON.stringify(content, null, 2));
     res.end();
 }

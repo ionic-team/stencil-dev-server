@@ -74,19 +74,25 @@ export async function run(argv: string[]) {
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
 
-  createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
-  const requestHandler = createHttpRequestHandler(wwwRoot, options.html5Mode, jsScriptLocations);
+  const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
+  const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
 
-  createServer(requestHandler).listen(foundHttpPort);
+  const httpServer = createServer(requestHandler).listen(foundHttpPort);
 
   console.log(`listening on ${browserUrl}:${foundHttpPort}`);
   console.log(`serving: ${wwwRoot}`);
   console.log(`watching: ${wwwRoot} ${options.watchGlob}`)
 
   opn(`http://${browserUrl}:${foundHttpPort}`);
+
+  process.once('SIGINT', () => {
+    httpServer.close();
+    fileWatcher.close();
+    process.exit(0);
+  });
 }
 
-function createHttpRequestHandler(wwwDir: string, html5Mode: boolean, jsScriptsList: string[]) {
+function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
   const jsScriptsMap = jsScriptsList.reduce((map, fileUrl: string): { [key: string ]: string } => {
     const urlParts = url.parse(fileUrl);
     if (urlParts.host) {
@@ -192,6 +198,8 @@ function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function
   watcher.on('error', (err: Error) => {
     console.error(err.toString());
   });
+
+  return watcher;
 }
 
 

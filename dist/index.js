@@ -76,17 +76,22 @@ function run(argv) {
         const jsScriptLocations = options.additionalJsScripts
             .map((filePath) => filePath.trim())
             .concat(lrScriptLocation);
-        createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
-        const requestHandler = createHttpRequestHandler(wwwRoot, options.html5Mode, jsScriptLocations);
-        http_1.createServer(requestHandler).listen(foundHttpPort);
+        const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
+        const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
+        const httpServer = http_1.createServer(requestHandler).listen(foundHttpPort);
         console.log(`listening on ${browserUrl}:${foundHttpPort}`);
         console.log(`serving: ${wwwRoot}`);
         console.log(`watching: ${wwwRoot} ${options.watchGlob}`);
         opn(`http://${browserUrl}:${foundHttpPort}`);
+        process.once('SIGINT', () => {
+            httpServer.close();
+            fileWatcher.close();
+            process.exit(0);
+        });
     });
 }
 exports.run = run;
-function createHttpRequestHandler(wwwDir, html5Mode, jsScriptsList) {
+function createHttpRequestHandler(wwwDir, jsScriptsList) {
     const jsScriptsMap = jsScriptsList.reduce((map, fileUrl) => {
         const urlParts = url.parse(fileUrl);
         if (urlParts.host) {
@@ -181,6 +186,7 @@ function createFileWatcher(wwwDir, watchGlob, changeCb) {
     watcher.on('error', (err) => {
         console.error(err.toString());
     });
+    return watcher;
 }
 function createLiveReload(port, address, wwwDir) {
     const liveReloadServer = tinylr();

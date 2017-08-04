@@ -15,7 +15,11 @@ export function serveHtml(wwwDir: string, scriptLocations: string[]) {
         </body>`
       );
 
-    res.setHeader('Content-Type', 'text/html');
+    res.writeHead(200, {
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Expires': '0',
+      'Content-Type': 'text/html'
+    });
     res.end(htmlString);
   };
 }
@@ -68,7 +72,11 @@ export function serveDirContents(wwwDir: string) {
       .replace('{linked-path}', dirUrl.replace(/\//g,' / '));
 
 
-    res.setHeader('Content-Type', 'text/html');
+    res.writeHead(200, {
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Expires': '0',
+      'Content-Type': 'text/html'
+    });
     res.end(templateHtml);
   }
 }
@@ -80,6 +88,8 @@ export async function sendFile(contentType: string, filePath: string, req: Incom
     }
 
     res.writeHead(200, {
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Expires': '0',
       'Content-Type': contentType,
       'Content-Length': stat.size
     });
@@ -89,7 +99,11 @@ export async function sendFile(contentType: string, filePath: string, req: Incom
 }
 
 export function sendError(httpStatus: number, res: ServerResponse, content: { [key: string]: any } = {}) {
-  res.writeHead(httpStatus, {"Content-Type": "text/plain"});
+  res.writeHead(httpStatus, {
+    'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+    'Expires': '0',
+    'Content-Type': 'text/plain'
+  });
   res.write(JSON.stringify(content, null, 2));
   res.end();
 }
