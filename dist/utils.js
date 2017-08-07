@@ -83,10 +83,10 @@ function parseConfigFile(baseDir, filePath) {
         }
         catch (err) {
             if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-                console.log(`The specified configFile does not exist: ${filePath}`);
+                throw new Error(`The specified configFile does not exist: ${filePath}`);
             }
             if (err.code === 'EACCES') {
-                console.log(`You do not have permission to read the specified configFile: ${filePath}`);
+                throw new Error(`You do not have permission to read the specified configFile: ${filePath}`);
             }
         }
         return config;

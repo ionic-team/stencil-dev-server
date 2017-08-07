@@ -25,8 +25,8 @@ const optionInfo = {
         default: 'www',
         type: String
     },
-    html5Mode: {
-        default: true,
+    verbose: {
+        default: false,
         type: Boolean
     },
     watchGlob: {
@@ -60,6 +60,7 @@ function run(argv) {
         cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts
             .split(',')
             .filter((name) => !!name);
+        const isVerbose = cliDefaultedOptions.verbose;
         const configOptions = yield utils_1.parseConfigFile(process.cwd(), cliDefaultedOptions.config);
         const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
             const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];
@@ -76,12 +77,12 @@ function run(argv) {
         const jsScriptLocations = options.additionalJsScripts
             .map((filePath) => filePath.trim())
             .concat(lrScriptLocation);
-        const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
+        const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate, isVerbose);
         const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
         const httpServer = http_1.createServer(requestHandler).listen(foundHttpPort);
-        console.log(`listening on ${browserUrl}:${foundHttpPort}`);
-        console.log(`serving: ${wwwRoot}`);
-        console.log(`watching: ${wwwRoot} ${options.watchGlob}`);
+        log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
+        log(isVerbose, `serving: ${wwwRoot}`);
+        log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`);
         opn(`http://${browserUrl}:${foundHttpPort}`);
         process.once('SIGINT', () => {
             httpServer.close();
@@ -173,18 +174,18 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
         });
     };
 }
-function createFileWatcher(wwwDir, watchGlob, changeCb) {
+function createFileWatcher(wwwDir, watchGlob, changeCb, isVerbose) {
     const watcher = chokidar_1.watch(watchGlob, {
         cwd: wwwDir,
         ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
     });
     function fileChanged(filePath) {
-        console.log(`[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
+        log(isVerbose, `[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
         changeCb([filePath]);
     }
     watcher.on('change', debounce(fileChanged, 500));
     watcher.on('error', (err) => {
-        console.error(err.toString());
+        log(true, err.toString());
     });
     return watcher;
 }
@@ -204,4 +205,9 @@ function createLiveReload(port, address, wwwDir) {
 }
 function getAddressForBrowser(ipAddress) {
     return (ipAddress === '0.0.0.0') ? 'localhost' : ipAddress;
+}
+function log(test, ...args) {
+    if (test) {
+        console.log(...args);
+    }
 }

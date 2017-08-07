@@ -8,7 +8,8 @@ import * as opn from 'opn';
 import { watch } from 'chokidar';
 import * as debounce from 'lodash.debounce';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
-import { findClosestOpenPort, parseOptions, parseConfigFile, getRequestedPath, getFileFromPath, fsStatPr } from './utils';
+import { findClosestOpenPort, parseOptions, parseConfigFile,
+  getRequestedPath, getFileFromPath, fsStatPr } from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
 
 const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
@@ -18,8 +19,8 @@ const optionInfo = {
     default: 'www',
     type: String
   },
-  html5Mode: {
-    default: true,
+  verbose: {
+    default: false,
     type: Boolean
   },
   watchGlob: {
@@ -53,9 +54,9 @@ export async function run(argv: string[]) {
   cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts
     .split(',')
     .filter((name: string) => !!name);
+  const isVerbose = cliDefaultedOptions.verbose;
 
   const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
-
   const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
     const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];
     options[optionName] = newValue;
@@ -74,14 +75,14 @@ export async function run(argv: string[]) {
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
 
-  const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate);
+  const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate, isVerbose);
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
 
   const httpServer = createServer(requestHandler).listen(foundHttpPort);
 
-  console.log(`listening on ${browserUrl}:${foundHttpPort}`);
-  console.log(`serving: ${wwwRoot}`);
-  console.log(`watching: ${wwwRoot} ${options.watchGlob}`)
+  log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
+  log(isVerbose, `serving: ${wwwRoot}`);
+  log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`)
 
   opn(`http://${browserUrl}:${foundHttpPort}`);
 
@@ -183,20 +184,20 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
 }
 
 
-function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function) {
+function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function, isVerbose: boolean) {
   const watcher = watch(watchGlob, {
     cwd: wwwDir,
     ignored: /(^|[\/\\])\../ // Ignore dot files, ie .git
   });
 
   function fileChanged(filePath: string) {
-    console.log(`[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
+    log(isVerbose, `[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
     changeCb([filePath]);
   }
 
   watcher.on('change', debounce(fileChanged, 500));
   watcher.on('error', (err: Error) => {
-    console.error(err.toString());
+    log(true, err.toString());
   });
 
   return watcher;
@@ -223,4 +224,10 @@ function createLiveReload(port: number, address: string, wwwDir: string): [strin
 
 function getAddressForBrowser(ipAddress: string) {
   return (ipAddress === '0.0.0.0') ? 'localhost' : ipAddress;
+}
+
+function log(test: boolean, ...args: any[]) {
+  if (test) {
+    console.log(...args);
+  }
 }
