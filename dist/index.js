@@ -29,6 +29,10 @@ const optionInfo = {
         default: false,
         type: Boolean
     },
+    html5mode: {
+        default: true,
+        type: Boolean
+    },
     watchGlob: {
         default: '**/*',
         type: String
@@ -78,7 +82,7 @@ function run(argv) {
             .map((filePath) => filePath.trim())
             .concat(lrScriptLocation);
         const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate, isVerbose);
-        const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
+        const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
         const httpServer = http_1.createServer(requestHandler).listen(foundHttpPort);
         log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
         log(isVerbose, `serving: ${wwwRoot}`);
@@ -92,7 +96,7 @@ function run(argv) {
     });
 }
 exports.run = run;
-function createHttpRequestHandler(wwwDir, jsScriptsList) {
+function createHttpRequestHandler(wwwDir, jsScriptsList, html5mode) {
     const jsScriptsMap = jsScriptsList.reduce((map, fileUrl) => {
         const urlParts = url.parse(fileUrl);
         if (urlParts.host) {
@@ -138,6 +142,10 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
             }
             catch (err) {
                 if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+                    if (html5mode) {
+                        const indexFileResponse = yield serveIndexFile();
+                        return indexFileResponse;
+                    }
                     return middlewares_1.sendError(404, res, { error: err });
                 }
                 if (err.code === 'EACCES') {
@@ -148,9 +156,7 @@ function createHttpRequestHandler(wwwDir, jsScriptsList) {
             // If this is the first request then try to serve an index.html file in the root dir
             if (reqPath === '/') {
                 const indexFileResponse = yield serveIndexFile();
-                if (indexFileResponse) {
-                    return indexFileResponse;
-                }
+                return indexFileResponse;
             }
             // If the request is to a directory but does not end in slash then redirect to use a slash
             if (pathStat.isDirectory() && !reqPath.endsWith('/')) {

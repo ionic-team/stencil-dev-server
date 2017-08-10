@@ -23,6 +23,10 @@ const optionInfo = {
     default: false,
     type: Boolean
   },
+  html5mode: {
+    default: true,
+    type: Boolean
+  },
   watchGlob: {
     default: '**/*',
     type: String
@@ -76,7 +80,7 @@ export async function run(argv: string[]) {
     .concat(lrScriptLocation);
 
   const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate, isVerbose);
-  const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations);
+  const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
 
   const httpServer = createServer(requestHandler).listen(foundHttpPort);
 
@@ -93,7 +97,7 @@ export async function run(argv: string[]) {
   });
 }
 
-function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
+function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5mode: boolean) {
   const jsScriptsMap = jsScriptsList.reduce((map, fileUrl: string): { [key: string ]: string } => {
     const urlParts = url.parse(fileUrl);
     if (urlParts.host) {
@@ -141,6 +145,10 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
       pathStat = await fsStatPr(filePath);
     } catch (err) {
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+        if (html5mode) {
+          const indexFileResponse = await serveIndexFile();
+          return indexFileResponse;
+        }
         return sendError(404, res, { error: err });
       }
       if (err.code === 'EACCES') {
@@ -152,9 +160,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[]) {
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
       const indexFileResponse = await serveIndexFile();
-      if (indexFileResponse) {
-        return indexFileResponse;
-      }
+      return indexFileResponse;
     }
 
     // If the request is to a directory but does not end in slash then redirect to use a slash
