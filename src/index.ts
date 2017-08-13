@@ -1,12 +1,10 @@
 import * as path from 'path';
-import * as chalk from 'chalk';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
 import { watch } from 'chokidar';
-import * as debounce from 'lodash.debounce';
 import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { findClosestOpenPort, parseOptions, parseConfigFile,
   getRequestedPath, getFileFromPath, fsStatPr } from './utils';
@@ -189,6 +187,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
   }
 }
 
+let timeoutId: NodeJS.Timer;
 
 function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function, isVerbose: boolean) {
   const watcher = watch(watchGlob, {
@@ -197,11 +196,15 @@ function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function
   });
 
   function fileChanged(filePath: string) {
-    log(isVerbose, `[${new Date().toTimeString().slice(0, 8)}] ${chalk.bold(filePath)} changed`);
-    changeCb([filePath]);
+    clearTimeout(timeoutId);
+
+    timeoutId = setTimeout(() => {
+      log(isVerbose, `[${new Date().toTimeString().slice(0, 8)}] ${filePath} changed`);
+      changeCb([filePath]);
+    }, 50);
   }
 
-  watcher.on('change', debounce(fileChanged, 500));
+  watcher.on('change', fileChanged);
   watcher.on('error', (err: Error) => {
     log(true, err.toString());
   });

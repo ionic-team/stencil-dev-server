@@ -9,8 +9,15 @@
   "scripts": {
     "build": "tsc -p .",
     "test": "echo \"Error: no test specified\" && exit 0",
-    "publish": "np"
+    "publish": "npm run build && np"
   },
+  "files": [
+    "assets/",
+    "bin/",
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ionic-team/stencil-dev-server.git"
@@ -22,17 +29,13 @@
   },
   "homepage": "https://github.com/ionic-team/stencil-dev-server#readme",
   "dependencies": {
-    "chalk": "^2.0.1",
     "chokidar": "^1.7.0",
     "ecstatic": "^2.2.1",
-    "lodash.debounce": "^4.0.8",
     "opn": "^5.1.0",
     "tiny-lr": "^1.0.5"
   },
   "devDependencies": {
-    "@types/chalk": "^0.4.31",
     "@types/chokidar": "^1.7.0",
-    "@types/minimist": "^1.2.0",
     "@types/opn": "^3.0.28",
     "np": "^2.16.0",
     "typescript": "^2.4.1"
