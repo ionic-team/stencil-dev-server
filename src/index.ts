@@ -109,7 +109,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     return map;
   }, <{ [key: string ]: string }>{});
 
-  const staticFileMiddleware = ecstatic({ root: wwwDir });
+  const staticFileMiddleware = ecstatic({ root: wwwDir, cache: 0 });
   const devServerFileMiddleware = ecstatic({ root: path.resolve(__dirname, '..', 'assets') });
   const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
