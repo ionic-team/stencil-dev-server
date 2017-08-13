@@ -130,6 +130,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
       if (indexFileStat && indexFileStat.isFile()) {
         return await sendHtml(indexFilePath, req, res);
       }
+      return null;
     }
 
     if (jsScriptsMap[(req.url || '')]) {
@@ -160,7 +161,9 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
       const indexFileResponse = await serveIndexFile();
-      return indexFileResponse;
+      if (indexFileResponse) {
+        return indexFileResponse;
+      }
     }
 
     // If the request is to a directory but does not end in slash then redirect to use a slash
