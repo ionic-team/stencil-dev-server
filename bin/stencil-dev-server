@@ -13,4 +13,4 @@ if (npmRunArgs) {
 
 const server = require('../dist');
 
-server.run(process.argv);
+server.run(cmdArgs);

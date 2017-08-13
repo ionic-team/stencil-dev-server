@@ -86,7 +86,9 @@ export async function run(argv: string[]) {
   log(isVerbose, `serving: ${wwwRoot}`);
   log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`)
 
-  opn(`http://${browserUrl}:${foundHttpPort}`);
+  if (argv.indexOf('--no-open') === -1) {
+    opn(`http://${browserUrl}:${foundHttpPort}`);
+  }
 
   process.once('SIGINT', () => {
     httpServer.close();
