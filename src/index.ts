@@ -119,8 +119,8 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
 
-    const serveIndexFile = async () => {
-      const indexFilePath = path.join(wwwDir, 'index.html');
+    const serveIndexFile = async (directory: string) => {
+      const indexFilePath = path.join(directory, 'index.html');
       let indexFileStat: fs.Stats | undefined;
       try {
         indexFileStat = await fsStatPr(indexFilePath);
@@ -147,7 +147,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     } catch (err) {
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
         if (html5mode) {
-          const indexFileResponse = await serveIndexFile();
+          const indexFileResponse = await serveIndexFile(wwwDir);
           return indexFileResponse;
         }
         return sendError(404, res, { error: err });
@@ -160,21 +160,27 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
 
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
-      const indexFileResponse = await serveIndexFile();
+      const indexFileResponse = await serveIndexFile(wwwDir);
       if (indexFileResponse) {
         return indexFileResponse;
       }
     }
 
     // If the request is to a directory but does not end in slash then redirect to use a slash
-    if (pathStat.isDirectory() && !reqPath.endsWith('/')) {
-      res.statusCode = 302;
-      res.setHeader('location', reqPath + '/');
-      return res.end();
-    }
 
     // If the request is to a directory then serve the directory contents
     if (pathStat.isDirectory()) {
+      const indexFileResponse = await serveIndexFile(filePath);
+      if (indexFileResponse) {
+        return indexFileResponse;
+      }
+      if (!reqPath.endsWith('/')) {
+        res.writeHead(302, {
+          'location': reqPath + '/'
+        });
+        return res.end();
+      }
+
       return await sendDirectoryContents(filePath, req, res);
     }
 
