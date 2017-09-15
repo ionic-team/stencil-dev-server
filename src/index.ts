@@ -9,6 +9,7 @@ import { createServer, IncomingMessage, ServerResponse } from 'http';
 import { findClosestOpenPort, parseOptions, parseConfigFile,
   getRequestedPath, getFileFromPath, fsStatPr } from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
+import { newSilentPublisher } from '@ionic/discover';
 
 const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
@@ -86,10 +87,15 @@ export async function run(argv: string[]) {
 
   log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
   log(isVerbose, `serving: ${wwwRoot}`);
-  log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`)
+  log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`);
 
   if (argv.indexOf('--no-open') === -1) {
     opn(`http://${browserUrl}:${foundHttpPort}`);
+  }
+
+  if (argv.indexOf('--broadcast') >= 0) {
+    log(isVerbose, 'publishing broadcast');
+    newSilentPublisher('devapp', 'stencil-dev', foundHttpPort);
   }
 
   process.once('SIGINT', () => {
