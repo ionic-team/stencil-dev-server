@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsc -p .",
     "test": "echo \"Error: no test specified\" && exit 0",
-    "publish": "npm run build && np"
+    "deploy": "npm run build && np"
   },
   "files": [
     "assets/",

@@ -60,7 +60,9 @@ export async function run(argv: string[]) {
 
   const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
   const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
-    const newValue = configOptions[optionName] || cliDefaultedOptions[optionName];
+    const newValue =  (configOptions[optionName] == null) ?
+      cliDefaultedOptions[optionName] :
+      configOptions[optionName];
     options[optionName] = newValue;
     return options;
   }, <{ [key: string]: any }>{});
@@ -133,11 +135,13 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
       return null;
     }
 
+    // If the file is a member of the scripts we autoload then serve it
     if (jsScriptsMap[(req.url || '')]) {
       return sendFile('application/javascript', jsScriptsMap[(req.url || '')], req, res);
     }
 
-    // If the request is to a static file then just send it on using the static file middleware
+    // If the request is to a static file that is part of this package
+    // then just send it on using the static file middleware
     if ((req.url || '').startsWith(RESERVED_STENCIL_PATH)) {
       return devServerFileMiddleware(req, res);
     }
@@ -188,7 +192,6 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     if (pathStat.isFile() && filePath.endsWith('.html')) {
       return await sendHtml(filePath, req, res);
     }
-
     if (pathStat.isFile()) {
       return staticFileMiddleware(req, res);
     }
