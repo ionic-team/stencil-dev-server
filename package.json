@@ -29,6 +29,7 @@
   },
   "homepage": "https://github.com/ionic-team/stencil-dev-server#readme",
   "dependencies": {
+    "@ionic/discover": "^0.3.3",
     "chokidar": "^1.7.0",
     "ecstatic": "^2.2.1",
     "opn": "^5.1.0",
