@@ -103,6 +103,8 @@ export async function run(argv: string[]) {
     fileWatcher.close();
     process.exit(0);
   });
+
+  return httpServer;
 }
 
 function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5mode: boolean) {

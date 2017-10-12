@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "test": "echo \"Error: no test specified\" && exit 0",
+    "test": "jest",
     "deploy": "npm run build && np"
   },
   "files": [
@@ -37,10 +37,25 @@
   },
   "devDependencies": {
     "@types/chokidar": "^1.7.0",
+    "@types/jest": "^21.1.2",
     "@types/opn": "^3.0.28",
+    "@types/supertest": "^2.0.3",
     "jest": "^21.2.1",
     "np": "^2.16.0",
     "supertest": "^3.0.0",
     "typescript": "^2.4.1"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "<rootDir>/preprocessor.js"
+    },
+    "testMatch": [
+      "**/__tests__/*.(ts|tsx|js)"
+    ]
   }
 }
