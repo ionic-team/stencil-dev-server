@@ -1,4 +1,5 @@
 [![npm][npm-badge]][npm-badge-url]
+[![Build Status][circle-badge]][circle-badge-url]
 
 # Stencil Dev Server
 
@@ -52,3 +53,5 @@ exports.devServer = {
 
 [npm-badge]: https://img.shields.io/npm/v/@stencil/dev-server.svg?style=flat-square
 [npm-badge-url]: https://www.npmjs.com/package/@stencil/dev-server
+[circle-badge]: https://circleci.com/gh/ionic-team/stencil-dev-server.svg?style=shield
+[circle-badge-url]: https://circleci.com/gh/ionic-team/stencil-dev-server
