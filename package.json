@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p .",
-    "test": "jest --forceExit",
+    "test": "jest",
     "deploy": "npm run build && np"
   },
   "files": [

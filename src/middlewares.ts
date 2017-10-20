@@ -81,21 +81,21 @@ export function serveDirContents(wwwDir: string) {
   }
 }
 export async function sendFile(contentType: string, filePath: string, req: IncomingMessage, res: ServerResponse) {
-    var stat = await fsStatPr(filePath);
+  const stat = await fsStatPr(filePath);
 
-    if (!stat.isFile()) {
-      return sendError(404, res, { error: 'File not found'});
-    }
+  if (!stat.isFile()) {
+    return sendError(404, res, { error: 'File not found'});
+  }
 
-    res.writeHead(200, {
-      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-      'Expires': '0',
-      'Content-Type': contentType,
-      'Content-Length': stat.size
-    });
+  res.writeHead(200, {
+    'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+    'Expires': '0',
+    'Content-Type': contentType,
+    'Content-Length': stat.size
+  });
 
-    fs.createReadStream(filePath)
-      .pipe(res);
+  fs.createReadStream(filePath)
+    .pipe(res);
 }
 
 export function sendError(httpStatus: number, res: ServerResponse, content: { [key: string]: any } = {}) {

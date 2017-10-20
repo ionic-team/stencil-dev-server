@@ -1,5 +1,5 @@
 exports.devServer = {
   watchGlob: '**/*.js',
-  html5mode: false,
+  html5mode: true,
   root: __dirname,
 };

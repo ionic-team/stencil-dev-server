@@ -4,8 +4,8 @@ import * as url from 'url';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
-import { watch } from 'chokidar';
-import { createServer, IncomingMessage, ServerResponse } from 'http';
+import { watch, FSWatcher } from 'chokidar';
+import { createServer, IncomingMessage, ServerResponse, Server } from 'http';
 import { findClosestOpenPort, parseOptions, parseConfigFile,
   getRequestedPath, getFileFromPath, fsStatPr } from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
@@ -52,6 +52,13 @@ const optionInfo = {
   }
 }
 
+export interface StencilDevServer {
+  httpServer: Server,
+  fileWatcher: FSWatcher,
+  tinyLrServer: tinylr.server,
+  close: () => Promise<void>
+}
+
 export async function run(argv: string[]) {
   const cliDefaultedOptions = parseOptions(optionInfo, argv);
   cliDefaultedOptions.additionalJsScripts = cliDefaultedOptions.additionalJsScripts
@@ -75,19 +82,18 @@ export async function run(argv: string[]) {
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
 
-  const [ lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
+  const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
   const jsScriptLocations: string[] = options.additionalJsScripts
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
 
   const fileWatcher = createFileWatcher(wwwRoot, options.watchGlob, emitLiveReloadUpdate, isVerbose);
+  log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`);
+
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
-
   const httpServer = createServer(requestHandler).listen(foundHttpPort);
-
   log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
   log(isVerbose, `serving: ${wwwRoot}`);
-  log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`);
 
   if (argv.indexOf('--no-open') === -1) {
     opn(`http://${browserUrl}:${foundHttpPort}`);
@@ -98,13 +104,30 @@ export async function run(argv: string[]) {
     newSilentPublisher('devapp', 'stencil-dev', foundHttpPort);
   }
 
-  process.once('SIGINT', () => {
-    httpServer.close();
+  async function close() {
     fileWatcher.close();
+    tinyLrServer.close();
+    await new Promise((resolve, reject) => {
+      httpServer.close((err: Error) => {
+        if (err) {
+          reject(err);
+        }
+        resolve();
+      });
+    });
+  }
+
+  process.once('SIGINT', async () => {
+    await close();
     process.exit(0);
   });
 
-  return httpServer;
+  return {
+    httpServer,
+    fileWatcher,
+    tinyLrServer,
+    close
+  } as StencilDevServer;
 }
 
 function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5mode: boolean) {
@@ -134,13 +157,11 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
       let indexFileStat: fs.Stats | undefined;
       try {
         indexFileStat = await fsStatPr(indexFilePath);
-      } catch (e) {
-        indexFileStat = undefined;
-      }
+      } catch (err) {}
+
       if (indexFileStat && indexFileStat.isFile()) {
-        return await sendHtml(indexFilePath, req, res);
+        return sendHtml(indexFilePath, req, res);
       }
-      return null;
     }
 
     // If the file is a member of the scripts we autoload then serve it
@@ -157,35 +178,46 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
     try {
       pathStat = await fsStatPr(filePath);
     } catch (err) {
+
+      // File or path does not exist
       if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-        if (html5mode) {
-          const indexFileResponse = await serveIndexFile(wwwDir);
-          return indexFileResponse;
+        if (html5mode && (['.html', ''].indexOf(path.extname(filePath)) !== -1)) {
+          await serveIndexFile(wwwDir);
+          if (res.finished) {
+            return;
+          }
         }
+
+        // The wwwDir index.html file does not exist.
         return sendError(404, res, { error: err });
       }
+
+      // No access to the file.
       if (err.code === 'EACCES') {
         return sendError(403, res, { error: err });
       }
+
+      // Not sure what happened.
       return sendError(500, res, { error: err });
     }
 
     // If this is the first request then try to serve an index.html file in the root dir
     if (reqPath === '/') {
-      const indexFileResponse = await serveIndexFile(wwwDir);
-      if (indexFileResponse) {
-        return indexFileResponse;
+      await serveIndexFile(wwwDir);
+      if (res.finished) {
+        return;
       }
     }
 
-    // If the request is to a directory but does not end in slash then redirect to use a slash
 
     // If the request is to a directory then serve the directory contents
     if (pathStat.isDirectory()) {
-      const indexFileResponse = await serveIndexFile(filePath);
-      if (indexFileResponse) {
-        return indexFileResponse;
+      await serveIndexFile(filePath);
+      if (res.finished) {
+        return;
       }
+
+      // If the request is to a directory but does not end in slash then redirect to use a slash
       if (!reqPath.endsWith('/')) {
         res.writeHead(302, {
           'location': reqPath + '/'
@@ -235,11 +267,12 @@ function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function
 }
 
 
-function createLiveReload(port: number, address: string, wwwDir: string): [string, (changedFile: string[]) => void] {
+function createLiveReload(port: number, address: string, wwwDir: string): [ tinylr.server, string, (changedFile: string[]) => void] {
   const liveReloadServer = tinylr();
   liveReloadServer.listen(port, address);
 
   return [
+    liveReloadServer,
     `http://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
     (changedFiles: string[]) => {
       liveReloadServer.changed({
