@@ -38,6 +38,16 @@ describe('GET Collection', async function () {
       expect(response.status).toBe(404);
     });
 
+    it('should return 200 for js_incldues files that do exist', async function () {
+      const response = await request(devServer.httpServer).get('/__stencil-dev-server__/js_includes/alert.js');
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 404 for js_incldues files that do not exist', async function () {
+      const response = await request(devServer.httpServer).get('/__stencil-dev-server__/js_includes/bad-file.js');
+      expect(response.status).toBe(404);
+    });
+
     it('should return 200 and index file for html files that do not exist', async function () {
       const response = await request(devServer.httpServer).get('/red.html');
       expect(response.status).toBe(200);
