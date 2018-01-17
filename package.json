@@ -7,6 +7,7 @@
     "stencil-dev-server": "./bin/stencil-dev-server"
   },
   "scripts": {
+    "dev": "tsc -w -p .",
     "build": "tsc -p .",
     "test": "jest --runInBand",
     "deploy": "npm run build && np"
