@@ -12,6 +12,7 @@ import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares'
 import { newSilentPublisher } from '@ionic/discover';
 
 
+
 const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
 const optionInfo = {
@@ -85,8 +86,9 @@ export async function run(argv: string[]) {
   ]);
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
+  const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = await createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
 
-  const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
+
   const jsScriptLocations: string[] = options.additionalJsScripts
     .map((filePath: string) => filePath.trim())
     .concat(lrScriptLocation);
@@ -96,8 +98,8 @@ export async function run(argv: string[]) {
 
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
 
-  const ssl = await getSSL();
 
+  const ssl = await getSSL();
   const httpServer =  createServer( ssl ,requestHandler).listen(foundHttpPort);;
 
   log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
@@ -275,9 +277,10 @@ function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function
 }
 
 
-function createLiveReload(port: number, address: string, wwwDir: string): [ tinylr.server, string, (changedFile: string[]) => void] {
-  const liveReloadServer = tinylr();
-  liveReloadServer.listen(port, address);
+async function createLiveReload(port: number, address: string, wwwDir: string): Promise<[ tinylr.server, string, (changedFile: string[]) => void]> {
+  const ssl = await getSSL();
+  const liveReloadServer = tinylr(ssl);
+  liveReloadServer.listen(port,address);
 
   return [
     liveReloadServer,
