@@ -32,6 +32,7 @@
   "dependencies": {
     "@ionic/discover": "^0.3.3",
     "chokidar": "^1.7.0",
+    "devcert-san": "^0.3.3",
     "ecstatic": "^2.2.1",
     "opn": "^5.1.0",
     "tiny-lr": "^1.0.5"
