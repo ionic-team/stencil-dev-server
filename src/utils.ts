@@ -104,7 +104,7 @@ export function getFileFromPath(wwwRoot: string, requestUrl: string) {
 }
 
 
-export function getSSL() {
+export async function getSSL() {
   return installSSL().then((cert: any) => {
     return {
       key: fs.readFileSync(cert.keyPath, 'utf-8'),
