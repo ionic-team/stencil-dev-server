@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as url from 'url';
 import * as fs from 'fs';
 import { promisify } from './promisify';
+import getDevelopmentCertificate from 'devcert-san';
 
 export const fsStatPr = promisify(fs.stat);
 export const fsReadFilePr = promisify(fs.readFile);
@@ -101,6 +102,27 @@ export function getFileFromPath(wwwRoot: string, requestUrl: string) {
     )
   );
 }
+
+
+export function getSSL() {
+  return installSSL().then((cert: any) => {
+    return {
+      key: fs.readFileSync(cert.keyPath, 'utf-8'),
+      cert: fs.readFileSync(cert.certPath, 'utf-8')
+    }
+  });
+}
+
+function installSSL() {
+  try {
+    return getDevelopmentCertificate('stencil-dev-server-ssl', {
+      installCertutil: true
+    })
+  } catch (err) {
+    throw new Error(`Failed to generate dev SSL certificate: ${err}\n`)
+  }
+}
+
 
 function decodePathname(pathname: string) {
   const pieces = pathname.replace(/\\/g,"/").split('/');

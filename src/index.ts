@@ -5,11 +5,12 @@ import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
 import { watch, FSWatcher } from 'chokidar';
-import { createServer, IncomingMessage, ServerResponse, Server } from 'http';
+import { createServer, IncomingMessage, ServerResponse, Server } from 'https';
 import { findClosestOpenPort, parseOptions, parseConfigFile,
-  getRequestedPath, getFileFromPath, fsStatPr } from './utils';
+  getRequestedPath, getFileFromPath, fsStatPr ,getSSL} from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
 import { newSilentPublisher } from '@ionic/discover';
+
 
 const RESERVED_STENCIL_PATH = '/__stencil-dev-server__';
 
@@ -49,6 +50,10 @@ const optionInfo = {
   config: {
     default: './stencil.config.js',
     type: String
+  },
+  ssl: {
+    default: false,
+    type: Boolean
   }
 }
 
@@ -65,7 +70,6 @@ export async function run(argv: string[]) {
     .split(',')
     .filter((name: string) => !!name);
   const isVerbose = cliDefaultedOptions.verbose;
-
   const configOptions = await parseConfigFile(process.cwd(), cliDefaultedOptions.config);
   const options = Object.keys(cliDefaultedOptions).reduce((options, optionName) => {
     const newValue =  (configOptions[optionName] == null) ?
@@ -91,12 +95,16 @@ export async function run(argv: string[]) {
   log(isVerbose, `watching: ${wwwRoot} ${options.watchGlob}`);
 
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
-  const httpServer = createServer(requestHandler).listen(foundHttpPort);
+
+  const ssl = await getSSL();
+
+  const httpServer =  createServer( ssl ,requestHandler).listen(foundHttpPort);;
+
   log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
   log(isVerbose, `serving: ${wwwRoot}`);
 
   if (argv.indexOf('--no-open') === -1) {
-    opn(`http://${browserUrl}:${foundHttpPort}`);
+    opn(`https://${browserUrl}:${foundHttpPort}`);
   }
 
   if (argv.indexOf('--broadcast') >= 0) {
@@ -117,7 +125,7 @@ export async function run(argv: string[]) {
     });
   }
 
-  process.once('SIGINT', async () => {
+  process.once('SIGINT', async () => {;
     await close();
     process.exit(0);
   });
@@ -273,7 +281,7 @@ function createLiveReload(port: number, address: string, wwwDir: string): [ tiny
 
   return [
     liveReloadServer,
-    `http://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
+    `https://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
     (changedFiles: string[]) => {
       liveReloadServer.changed({
         body: {

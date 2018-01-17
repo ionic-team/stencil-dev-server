@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as url from 'url';
 import * as fs from 'fs';
-import { IncomingMessage, ServerResponse } from 'http';
+import { IncomingMessage, ServerResponse } from 'https';
 import { fsReadFilePr, fsReadDirPr, fsStatPr } from './utils';
 
 export function serveHtml(wwwDir: string, scriptLocations: string[]) {
