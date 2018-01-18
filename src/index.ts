@@ -86,14 +86,12 @@ export async function run(argv: string[]) {
     findClosestOpenPort(options.address, options.liveReloadPort),
   ]);
 
-
   const protocol:string = options.ssl ? 'https' : 'http';
   log(isVerbose, `Will serve requests using : ${protocol}`);
 
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
   const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = await createLiveReload(foundLiveReloadPort, options.address, wwwRoot , options.ssl);
-
 
   const jsScriptLocations: string[] = options.additionalJsScripts
     .map((filePath: string) => filePath.trim())
