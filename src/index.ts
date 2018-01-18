@@ -4,8 +4,9 @@ import * as url from 'url';
 import * as tinylr from 'tiny-lr';
 import * as ecstatic from 'ecstatic';
 import * as opn from 'opn';
+import * as http  from 'http';
+import * as https from 'https';
 import { watch, FSWatcher } from 'chokidar';
-import { createServer, IncomingMessage, ServerResponse, Server } from 'https';
 import { findClosestOpenPort, parseOptions, parseConfigFile,
   getRequestedPath, getFileFromPath, fsStatPr ,getSSL} from './utils';
 import { serveHtml, serveDirContents, sendError, sendFile } from './middlewares';
@@ -59,7 +60,7 @@ const optionInfo = {
 }
 
 export interface StencilDevServer {
-  httpServer: Server,
+  httpServer: http.Server | https.Server,
   fileWatcher: FSWatcher,
   tinyLrServer: tinylr.server,
   close: () => Promise<void>
@@ -84,9 +85,14 @@ export async function run(argv: string[]) {
     findClosestOpenPort(options.address, options.httpPort),
     findClosestOpenPort(options.address, options.liveReloadPort),
   ]);
+
+
+  const protocol:string = options.ssl ? 'https' : 'http';
+  log(isVerbose, `Will serve requests using : ${protocol}`);
+
   const wwwRoot = path.resolve(options.root);
   const browserUrl = getAddressForBrowser(options.address);
-  const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = await createLiveReload(foundLiveReloadPort, options.address, wwwRoot);
+  const [ tinyLrServer, lrScriptLocation, emitLiveReloadUpdate ] = await createLiveReload(foundLiveReloadPort, options.address, wwwRoot , options.ssl);
 
 
   const jsScriptLocations: string[] = options.additionalJsScripts
@@ -98,15 +104,14 @@ export async function run(argv: string[]) {
 
   const requestHandler = createHttpRequestHandler(wwwRoot, jsScriptLocations, options.html5mode);
 
+  const httpServer  = options.ssl ? https.createServer( await getSSL() ,requestHandler).listen(foundHttpPort)
+                                  : http.createServer(requestHandler).listen(foundHttpPort);
 
-  const ssl = await getSSL();
-  const httpServer =  createServer( ssl ,requestHandler).listen(foundHttpPort);;
-
-  log(isVerbose, `listening on ${browserUrl}:${foundHttpPort}`);
+  log(isVerbose, `listening on ${protocol}://${browserUrl}:${foundHttpPort}`);
   log(isVerbose, `serving: ${wwwRoot}`);
 
   if (argv.indexOf('--no-open') === -1) {
-    opn(`https://${browserUrl}:${foundHttpPort}`);
+    opn(`${protocol}://${browserUrl}:${foundHttpPort}`);
   }
 
   if (argv.indexOf('--broadcast') >= 0) {
@@ -157,7 +162,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
   const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
 
-  return async function(req: IncomingMessage, res: ServerResponse) {
+  return async function(req: http.IncomingMessage |https.IncomingMessage , res: http.ServerResponse | https.ServerResponse) {
     const reqPath = getRequestedPath(req.url || '');
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
@@ -277,14 +282,17 @@ function createFileWatcher(wwwDir: string, watchGlob: string, changeCb: Function
 }
 
 
-async function createLiveReload(port: number, address: string, wwwDir: string): Promise<[ tinylr.server, string, (changedFile: string[]) => void]> {
-  const ssl = await getSSL();
-  const liveReloadServer = tinylr(ssl);
+async function createLiveReload(port: number, address: string, wwwDir: string , ssl: boolean): Promise<[ tinylr.server, string, (changedFile: string[]) => void]> {
+
+  const options:any = ssl ? await getSSL() : {};
+  const protocol:string = ssl ? 'https' : 'http';
+
+  const liveReloadServer = tinylr(options);
   liveReloadServer.listen(port,address);
 
   return [
     liveReloadServer,
-    `https://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
+    `${protocol}://${getAddressForBrowser(address)}:${port}/livereload.js?snipver=1`,
     (changedFiles: string[]) => {
       liveReloadServer.changed({
         body: {
