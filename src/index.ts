@@ -130,7 +130,7 @@ export async function run(argv: string[]) {
     });
   }
 
-  process.once('SIGINT', async () => {;
+  process.once('SIGINT', async () => {
     await close();
     process.exit(0);
   });
