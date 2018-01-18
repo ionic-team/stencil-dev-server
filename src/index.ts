@@ -160,7 +160,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
   const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
 
-  return async function(req: http.IncomingMessage |https.IncomingMessage , res: http.ServerResponse | https.ServerResponse) {
+  return async function(req: http.IncomingMessage | https.IncomingMessage , res: http.ServerResponse | https.ServerResponse) {
     const reqPath = getRequestedPath(req.url || '');
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
