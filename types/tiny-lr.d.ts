@@ -7,7 +7,7 @@ declare module "tiny-lr" {
       changed: Function;
     }
   }
-  function tinyLr(): tinyLr.server;
+  function tinyLr(options?:{ [ name: string]: any }): tinyLr.server;
 
   export = tinyLr;
 }
