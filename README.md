@@ -41,7 +41,6 @@ There are a number of options available, but all have sane defaults.
 - **--no-open**
   - Disables automatically opening a browser.
 
-
 Config File Structure
 
 ```js
