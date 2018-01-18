@@ -115,6 +115,7 @@ export async function getSSL() {
 
 function installSSL() {
   try {
+    //  Certificates are cached by name, so two calls for getDevelopmentCertificate('foo')  will return the same key and certificate
     return getDevelopmentCertificate('stencil-dev-server-ssl', {
       installCertutil: true
     })
