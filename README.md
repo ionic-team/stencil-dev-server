@@ -35,6 +35,9 @@ There are a number of options available, but all have sane defaults.
 - **--config**
   - The path to a config file for the dev server. This allows you to keep a specific set of default parameters in a configuration file.
   - Defaults to *./stencil.config.js*
+- **--ssl**
+    - Enables https for development server with self signed SSL certificate
+    - Defaults to false
 - **--no-open**
   - Disables automatically opening a browser.
 
