@@ -56,6 +56,10 @@ const optionInfo = {
   ssl: {
     default: false,
     type: Boolean
+  },
+  app: {
+    default: '',
+    type: String
   }
 }
 
@@ -109,7 +113,7 @@ export async function run(argv: string[]) {
   log(isVerbose, `serving: ${wwwRoot}`);
 
   if (argv.indexOf('--no-open') === -1) {
-    opn(`${protocol}://${browserUrl}:${foundHttpPort}`);
+    opn(`${protocol}://${browserUrl}:${foundHttpPort}`, {app: `${options.app}`});
   }
 
   if (argv.indexOf('--broadcast') >= 0) {
