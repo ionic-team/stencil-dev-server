@@ -105,7 +105,7 @@ export async function run(argv: string[]) {
   const httpServer  = options.ssl ? https.createServer( await getSSL() ,requestHandler).listen(foundHttpPort)
                                   : http.createServer(requestHandler).listen(foundHttpPort);
 
-  log(isVerbose, `listening on ${protocol}://${browserUrl}:${foundHttpPort}`);
+  log(true, `listening on ${protocol}://${browserUrl}:${foundHttpPort}`);
   log(isVerbose, `serving: ${wwwRoot}`);
 
   if (argv.indexOf('--no-open') === -1) {
@@ -160,7 +160,7 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
   const sendHtml = serveHtml(wwwDir, Object.keys(jsScriptsMap));
   const sendDirectoryContents = serveDirContents(wwwDir);
 
-  return async function(req: http.IncomingMessage | https.IncomingMessage , res: http.ServerResponse | https.ServerResponse) {
+  return async function(req: http.IncomingMessage, res: http.ServerResponse) {
     const reqPath = getRequestedPath(req.url || '');
     const filePath = getFileFromPath(wwwDir, req.url || '');
     let pathStat: fs.Stats;
