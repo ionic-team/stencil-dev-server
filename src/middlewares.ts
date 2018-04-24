@@ -6,7 +6,7 @@ import * as https from 'https';
 import { fsReadFilePr, fsReadDirPr, fsStatPr } from './utils';
 
 export function serveHtml(wwwDir: string, scriptLocations: string[]) {
-  return async function(filePath: string, req: http.IncomingMessage | https.IncomingMessage, res: http.ServerResponse | https.ServerResponse) {
+  return async function(filePath: string, req: http.IncomingMessage, res: http.ServerResponse) {
     const indexHtml = await fsReadFilePr(filePath);
     const appendString = scriptLocations.map(sl => `<script type="text/javascript" src="${sl}" charset="utf-8"></script>`).join('\n');
     const htmlString: string = indexHtml.toString()
@@ -26,7 +26,7 @@ export function serveHtml(wwwDir: string, scriptLocations: string[]) {
 }
 
 export function serveDirContents(wwwDir: string) {
-  return async function(dirPath: string, req: http.IncomingMessage | https.IncomingMessage, res: http.ServerResponse | https.ServerResponse) {
+  return async function(dirPath: string, req: http.IncomingMessage, res: http.ServerResponse) {
     let files: string[];
     const dirUrl = req.url;
     if (!dirUrl) {
@@ -81,7 +81,7 @@ export function serveDirContents(wwwDir: string) {
     res.end(templateHtml);
   }
 }
-export async function sendFile(contentType: string, filePath: string,  req: http.IncomingMessage | https.IncomingMessage, res: http.ServerResponse | https.ServerResponse) {
+export async function sendFile(contentType: string, filePath: string,  req: http.IncomingMessage, res: http.ServerResponse) {
   const stat = await fsStatPr(filePath);
 
   if (!stat.isFile()) {
@@ -99,7 +99,7 @@ export async function sendFile(contentType: string, filePath: string,  req: http
     .pipe(res);
 }
 
-export function sendError(httpStatus: number, res: http.ServerResponse | https.ServerResponse, content: { [key: string]: any } = {}) {
+export function sendError(httpStatus: number, res: http.ServerResponse, content: { [key: string]: any } = {}) {
   res.writeHead(httpStatus, {
     'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
     'Expires': '0',
