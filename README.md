@@ -40,6 +40,10 @@ There are a number of options available, but all have sane defaults.
     - Defaults to false
 - **--no-open**
   - Disables automatically opening a browser.
+- **--app**
+  - Selects the application(browser) to open.
+  - Chrome: `chrome` on Windows, `google-chrome`on Linux, `google chrome` on macOS.
+  - Firefox: `firefox` on Windows.
 
 Config File Structure
 
