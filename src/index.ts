@@ -246,6 +246,8 @@ function createHttpRequestHandler(wwwDir: string, jsScriptsList: string[], html5
       return await sendHtml(filePath, req, res);
     }
     if (pathStat.isFile()) {
+      // Allow files to be loaded cross-origin
+      res.setHeader('Access-Control-Allow-Origin', '*');
       return staticFileMiddleware(req, res);
     }
 
