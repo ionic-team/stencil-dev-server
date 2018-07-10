@@ -3,6 +3,8 @@
 
 ## Deprecated: The stencil-dev-server is now integrated into @stencil/core.
 
+As of Stencil `0.10.0`, please use the `--serve` argument to enable Stencil's integrated dev-server, which replaces this project.
+
 # Stencil Dev Server
 
 This is a very simple http-server with a filewatcher and livereload built in. This server
