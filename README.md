@@ -1,6 +1,8 @@
 [![npm][npm-badge]][npm-badge-url]
 [![Build Status][circle-badge]][circle-badge-url]
 
+## Deprecated: The stencil-dev-server is now integrated into @stencil/core.
+
 # Stencil Dev Server
 
 This is a very simple http-server with a filewatcher and livereload built in. This server
